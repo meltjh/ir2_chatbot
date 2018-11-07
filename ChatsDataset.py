@@ -47,5 +47,5 @@ class ChatsDataset(Dataset):
             inputs.append(item["in"])
             outputs.append(item["out"])
             templates.append(item["template"])
-        
+
         return inputs, outputs, templates
