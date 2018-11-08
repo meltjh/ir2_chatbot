@@ -25,19 +25,9 @@ class Encoder(nn.Module):
 
     # Post-model
     hidden_bilinear_input, hidden_bilinear_templates = self.unpack_bilinear(lstm_hidden, mapping1, mapping2, num_inputs, templates)
+    hidden_concat_input, hidden_concat_templates = self.unpack_decoder(lstm_output, mapping1, mapping2, num_inputs)
 
-
-    print(hidden_bilinear_templates)
-
-    asd
-
-
-
-
-    # For decoder
-    hidden_concat = self.unpack(lstm_output)
-
-    return hidden_final, hidden_concat
+    return hidden_bilinear_input, hidden_bilinear_templates, hidden_concat_input, hidden_concat_templates
 
   def stack_inputs(self, input, templates):
     stacked = input
@@ -74,14 +64,22 @@ class Encoder(nn.Module):
 
     return hidden_bilinear_input, hidden_bilinear_templates
 
-  def unpack(self, packed_sequence):
-    unpacked_sequence, lengths = pad_packed_sequence(packed_sequence)
+  def unpack_decoder(self, lstm_output, mapping1, mapping2, num_inputs):
+    unpacked_output, lengths = pad_packed_sequence(lstm_output)
 
-    hidden_concats = []
+    hidden_concat = []
     for i in range(len(lengths)):
-      hidden_concats.append(unpacked_sequence[:lengths[i],i].contiguous().view(lengths[i]*self.hidden_size*2))
+      hidden_concat.append(unpacked_output[:lengths[i],i].contiguous().view(lengths[i]*self.hidden_size*2))
 
-      return hidden_concats
+    hidden_concat_ordered = np.array(hidden_concat)[mapping2]
+    hidden_concat_input = hidden_concat_ordered[:num_inputs]
+
+    hidden_concat_templates = []
+    for input_templates in mapping1:
+      hidden_concat_templates.append(hidden_concat_ordered[input_templates])
+
+    print(hidden_concat_templates)
+    return hidden_concat_input, hidden_concat_templates
 
 
 class Bilinear(nn.Module):
@@ -111,9 +109,7 @@ t = list(map(lambda l: [torch.tensor(ti) for ti in l], t))
 emd = nn.Embedding(10, 500)
 e = Encoder(emd)
 b = Bilinear()
-u, j = e(x, t)
-s = b(u, u)
+bi_in, bi_temp, j = e(x, t)
+s = b(bi_in, bi_temp)
 
-print(j)
-for t in j:
-  print(t.size())
+print(s)
