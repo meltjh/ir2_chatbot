@@ -5,9 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 from word2id import Word2Id
 import matplotlib.pyplot as plt
 
-word2id = Word2Id()
-
-def read(filename, word2id):
+def read(filename, word2id, add_new_words):
     """ 
     Returns: template_data, user_data. Both as id's
     template_data: {chat_id:[template1,...]}
@@ -46,7 +44,7 @@ def read(filename, word2id):
                     data = [data]
                 for sentence in data:
                     # Obtain ids and add them to the template.
-                    templates.append(word2id.string2id(sentence))
+                    templates.append(word2id.string2id(sentence, add_new_words))
             template_data[chat_id] = templates
                 
             # Loop to have pairs of q (even) and a (uneven). 
@@ -60,8 +58,6 @@ def read(filename, word2id):
                 user_data.append(data)
            
     return template_data, user_data
-
-    
 
 def print_counts(template_data, user_data):
     # TODO: nog goed maken.
@@ -98,21 +94,30 @@ def print_counts(template_data, user_data):
     plt.hist(out_lengths, bins=max(out_lengths))
     plt.show()
 
-template_data, user_data = read("data/main_data/test_data.json", word2id)
-print_counts(template_data, user_data)
+def get_single_dataset(filename, word2id, batch_size, is_train, print_freqs = False):
+    """
+    Returns a single dataset as dataloader object in batches.
+    """
+    template_data, user_data = read(filename, word2id, is_train)
 
-#amounts = []
-#for key, templates in template_data.items():
-#    for template in templates:
-#        amounts.append(len(template))
-#c = Counter(amounts)
-#print("mc", c.most_common())
-#print("max",max(amounts))
+    # Print frequencies for data analysis.
+    if print_freqs:
+        print_counts(template_data, user_data)
 
-dataset = ChatsDataset(template_data, user_data)
-dataloader = DataLoader(dataset, batch_size=5, collate_fn=dataset.collate)
-for input, output, templates in dataloader:
-    print(input)
-    break
-print("Done")
+    dataset = ChatsDataset(template_data, user_data)
+    dataloader = DataLoader(dataset, batch_size, collate_fn=dataset.collate)
+    return dataloader
 
+def get_datasets(path, batch_size, print_freqs = False):
+    """
+    Returns all three datasets and the word2id object.
+    """
+    word2id = Word2Id()
+    train_data = get_single_dataset(path + "/train_data.json", word2id, batch_size, True, print_freqs)
+    dev_data = get_single_dataset(path + "/dev_data.json", word2id, batch_size, False, print_freqs)
+    test_data = get_single_dataset(path + "/test_data.json", word2id, batch_size, False, print_freqs)
+    
+    return train_data, dev_data, test_data, word2id
+    
+    
+train_data, dev_data, test_data, word2id = get_datasets("data/main_data", 5, False)
