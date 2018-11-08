@@ -3,6 +3,7 @@ from collections import Counter
 from ChatsDataset import ChatsDataset
 from torch.utils.data import Dataset, DataLoader
 from word2id import Word2Id
+import matplotlib.pyplot as plt
 
 word2id = Word2Id()
 
@@ -62,7 +63,43 @@ def read(filename, word2id):
 
     
 
+def print_counts(template_data, user_data):
+    # TODO: nog goed maken.
+    template_lengths = []
+    for key, templates in template_data.items():
+        for template in templates:
+            template_lengths.append(len(template))
+            
+    plt.title("template")
+    plt.yscale('log')
+    plt.hist(template_lengths, bins=max(template_lengths), cumulative=True, alpha=0.25)
+    plt.hist(template_lengths, bins=max(template_lengths))
+    plt.show()
+    
+    
+    in_lengths = []
+    out_lengths = []
+    for data in user_data:
+        sentence_in = data["in"]
+        sentence_out = data["out"]
+        
+        in_lengths.append(len(sentence_in))
+        out_lengths.append(len(sentence_out))
+    
+    plt.title("sentence in")
+    plt.yscale('log')
+    plt.hist(in_lengths, bins=max(in_lengths), cumulative=True, alpha=0.25)
+    plt.hist(in_lengths, bins=max(in_lengths))
+    plt.show()
+    
+    plt.title("sentence out")
+    plt.yscale('log')
+    plt.hist(out_lengths, bins=max(out_lengths), cumulative=True, alpha=0.25)
+    plt.hist(out_lengths, bins=max(out_lengths))
+    plt.show()
+
 template_data, user_data = read("data/main_data/test_data.json", word2id)
+print_counts(template_data, user_data)
 
 #amounts = []
 #for key, templates in template_data.items():
