@@ -4,12 +4,13 @@ import numpy as np
 from torch.nn.utils.rnn import pack_sequence, pad_packed_sequence
 
 class Encoder(nn.Module):
-  def __init__(self, embeddings, hidden_size=500):
+  def __init__(self, vocab_size, embedding_dim, hidden_size):
     super().__init__()
 
     self.hidden_size = hidden_size
-    self.emb = embeddings
-    self.lstm = nn.LSTM(self.emb.embedding_dim, self.hidden_size, num_layers=2, bidirectional=True)
+    self.embedding_dim = embedding_dim
+    self.emb = nn.Embedding(vocab_size, self.embedding_dim)
+    self.lstm = nn.LSTM(self.embedding_dim, self.hidden_size, num_layers=2, bidirectional=True)
 
   def forward(self, input, templates):
     num_inputs = len(input)
@@ -78,7 +79,6 @@ class Encoder(nn.Module):
     for input_templates in mapping1:
       hidden_concat_templates.append(hidden_concat_ordered[input_templates])
 
-    print(hidden_concat_templates)
     return hidden_concat_input, hidden_concat_templates
 
 
@@ -94,22 +94,28 @@ class Bilinear(nn.Module):
 
     return self.sigmoid(bi_out)
 
-class Decoder(nn.Module):
-  def __init__(self, hidden_size=500):
+class Model(nn.Module):
+  def __init__(self, word2id, hidden_dim=500, embedding_dim=500):
     super().__init__()
 
+    self.word2id = word2id
+    self.encoder = Encoder(len(self.word2id.id2w), embedding_dim, hidden_dim)
+    self.bilinear = Bilinear()
 
-  def forward(self, x1, x2):
-    pass
+  def forward(self, input, templates):
+    hidden_bilinear_input, hidden_bilinear_templates, hidden_concat_input, hidden_concat_templates = self.encoder(input, templates)
+    saliency = self.bilinear(hidden_bilinear_input, hidden_bilinear_templates)
 
-x = [[4, 5, 2], [2, 1], [1, 1, 1, 1]]
-t = [[[1, 5, 2], [1, 1, 2]], [[2, 5, 2], [2, 1, 2]], [[3, 5, 2, 1], [3, 1, 2]]]
-x = [torch.tensor(i) for i in x]
-t = list(map(lambda l: [torch.tensor(ti) for ti in l], t))
-emd = nn.Embedding(10, 500)
-e = Encoder(emd)
-b = Bilinear()
-bi_in, bi_temp, j = e(x, t)
-s = b(bi_in, bi_temp)
+    return saliency
 
-print(s)
+# x = [[4, 5, 2], [2, 1], [1, 1, 1, 1]]
+# t = [[[1, 5, 2], [1, 1, 2]], [[2, 5, 2], [2, 1, 2]], [[3, 5, 2, 1], [3, 1, 2]]]
+# x = [torch.tensor(i) for i in x]
+# t = list(map(lambda l: [torch.tensor(ti) for ti in l], t))
+# emd = nn.Embedding(10, 500)
+# e = Encoder(emd)
+# b = Bilinear()
+# bi_in, bi_temp, j = e(x, t)
+# s = b(bi_in, bi_temp)
+#
+# print(s)
