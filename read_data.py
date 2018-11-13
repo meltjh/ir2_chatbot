@@ -44,14 +44,15 @@ def read(filename, word2id, add_new_words):
                     data = [data]
                 for sentence in data:
                     # Obtain ids and add them to the template.
-                    templates.append(word2id.string2id(sentence, add_new_words))
+                    if len(sentence) > 0:
+                        templates.append(word2id.string2id(sentence, add_new_words))
             template_data[chat_id] = templates
                 
             # Loop to have pairs of q (even) and a (uneven). 
             # Some chats have uneven amount of messages where the last one is then removed (hence the -1),
             # since it is supposed to be the human and thus no answer should be learned.
             for i in range(0, len(chat)-1, 2):
-                # Obtai the ids and add them to the template.
+                # Obtain the ids and add them to the template.
                 sentence_in = word2id.string2id(chat[i])
                 sentence_out = word2id.string2id(chat[i+1])
                 data = {"id":chat_id, "in":sentence_in, "out":sentence_out}
@@ -114,10 +115,10 @@ def get_datasets(path, batch_size, print_freqs = False):
     """
     word2id = Word2Id()
     train_data = get_single_dataset(path + "/train_data.json", word2id, batch_size, True, print_freqs)
-    dev_data = get_single_dataset(path + "/dev_data.json", word2id, batch_size, False, print_freqs)
-    test_data = get_single_dataset(path + "/test_data.json", word2id, batch_size, False, print_freqs)
+#    dev_data = get_single_dataset(path + "/dev_data.json", word2id, batch_size, False, print_freqs)
+#    test_data = get_single_dataset(path + "/test_data.json", word2id, batch_size, False, print_freqs)
     
-    return train_data, dev_data, test_data, word2id
+    return train_data , word2id #, dev_data, test_data, word2id
     
     
-train_data, dev_data, test_data, word2id = get_datasets("data/main_data", 5, False)
+#train_data, dev_data, test_data, word2id = get_datasets("data/main_data", 5, False)
