@@ -48,8 +48,9 @@ def read(filename, word2id, add_new_words):
                     data = [data]
                 for sentence in data:
                     # Obtain ids and add them to the template.
-                    if len(sentence) > 0:
-                        templates.append(word2id.string2id(sentence, add_new_words))
+                    sentence2id = word2id.string2id(sentence, add_new_words)
+                    if len(sentence2id) > 0:
+                        templates.append(sentence2id)
             template_data[chat_id] = templates
                 
             # Loop to have pairs of q (even) and a (uneven). 
