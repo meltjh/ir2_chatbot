@@ -100,7 +100,7 @@ class Model(nn.Module):
 
     self.word2id = word2id
     self.encoder = Encoder(len(self.word2id.id2w), embedding_dim, hidden_dim)
-    self.bilinear = Bilinear()
+    self.bilinear = Bilinear(hidden_dim)
 
   def forward(self, input, templates):
     hidden_bilinear_input, hidden_bilinear_templates, hidden_concat_input, hidden_concat_templates = self.encoder(input, templates)
