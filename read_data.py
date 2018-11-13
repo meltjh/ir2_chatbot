@@ -31,6 +31,10 @@ def read(filename, word2id, add_new_words):
             fact_taglines = facts["taglines"] if "taglines" in facts else []
             fact_similar_movies = facts["similar_movies"] if "similar_movies" in facts else []
             
+            # Split the sentences into a list of sentences splitted by the .
+            plot = [x.lstrip().rstrip() for x in plot.split(".")]
+            review = [x.lstrip().rstrip() for x in review.split(".")]
+            
             # Formatting templates data
             templates = []
             for data in [plot, 
