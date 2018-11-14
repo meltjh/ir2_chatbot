@@ -5,13 +5,13 @@ from read_data import get_datasets
 
 # Params
 NUM_EPOCHS = 10
-BATCH_SIZE = 4
+BATCH_SIZE = 5
 HIDDEN_DIM = 250
 EMBEDDING_DIM = 250
 
 # Init
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-train_data, word2id = get_datasets("data/main_data", BATCH_SIZE)
+train_data, _, _, word2id = get_datasets("data/main_data", BATCH_SIZE)
 
 # Model
 model = Model(word2id, HIDDEN_DIM, EMBEDDING_DIM).to(device)
@@ -32,7 +32,7 @@ for epoch in range(NUM_EPOCHS):
     # Training step
     opt.zero_grad()
     saliency = model(input, templates)
-    bilinear_loss = bilinear_loss_fn(saliency, torch.zeros_like(saliency).float())
+    bilinear_loss = bilinear_loss_fn(saliency, torch.randn_like(saliency).float())
     bilinear_loss.backward()
     opt.step()
 

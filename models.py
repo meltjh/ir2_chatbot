@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 from torch.nn.utils.rnn import pack_sequence, pad_packed_sequence
+
 
 class Encoder(nn.Module):
   def __init__(self, vocab_size, embedding_dim, hidden_size):
@@ -25,10 +27,10 @@ class Encoder(nn.Module):
     lstm_output, (lstm_hidden, _) = self.lstm(packed_input)
 
     # Post-model
-    hidden_bilinear_input, hidden_bilinear_templates = self.unpack_bilinear(lstm_hidden, mapping1, mapping2, num_inputs, templates)
-    hidden_concat_input, hidden_concat_templates = self.unpack_decoder(lstm_output, mapping1, mapping2, num_inputs)
+    hidden_bilinear_input, hidden_bilinear_templates, mapping1 = self.unpack_bilinear(lstm_hidden, mapping1, mapping2, num_inputs, templates)
+    hidden_concats = self.unpack_decoder(lstm_output, mapping1, mapping2, num_inputs)
 
-    return hidden_bilinear_input, hidden_bilinear_templates, hidden_concat_input, hidden_concat_templates
+    return hidden_bilinear_input, hidden_bilinear_templates, hidden_concats, mapping1
 
   def stack_inputs(self, input, templates):
     stacked = input
@@ -63,7 +65,7 @@ class Encoder(nn.Module):
     hidden_bilinear_input = hidden_bilinear[input_indices]
     hidden_bilinear_templates = hidden_bilinear[template_indices]
 
-    return hidden_bilinear_input, hidden_bilinear_templates
+    return hidden_bilinear_input, hidden_bilinear_templates, mapping1
 
   def unpack_decoder(self, lstm_output, mapping1, mapping2, num_inputs):
     unpacked_output, lengths = pad_packed_sequence(lstm_output)
@@ -73,13 +75,14 @@ class Encoder(nn.Module):
       hidden_concat.append(unpacked_output[:lengths[i],i].contiguous().view(lengths[i]*self.hidden_size*2))
 
     hidden_concat_ordered = np.array(hidden_concat)[mapping2]
-    hidden_concat_input = hidden_concat_ordered[:num_inputs]
+    # hidden_concat_ordered = np.array(hidden_concat)[mapping2]
+    # hidden_concat_input = hidden_concat_ordered[:num_inputs]
+    #
+    # hidden_concat_templates = []
+    # for input_templates in mapping1:
+    #   hidden_concat_templates.append(hidden_concat_ordered[input_templates])
 
-    hidden_concat_templates = []
-    for input_templates in mapping1:
-      hidden_concat_templates.append(hidden_concat_ordered[input_templates])
-
-    return hidden_concat_input, hidden_concat_templates
+    return hidden_concat_ordered
 
 
 class Bilinear(nn.Module):
@@ -94,6 +97,48 @@ class Bilinear(nn.Module):
 
     return self.sigmoid(bi_out)
 
+class BahdanauAttnDecoderRNN(nn.Module):
+  def __init__(self, hidden_size, output_size, n_layers=1, dropout_p=0.1):
+    super(BahdanauAttnDecoderRNN, self).__init__()
+    #TODO max_length definieren
+    max_length = 10
+
+    # Define parameters
+    self.hidden_size = hidden_size
+    self.output_size = output_size
+    self.n_layers = n_layers
+    self.dropout_p = dropout_p
+    self.max_length = max_length
+
+    # Define layers
+    self.embedding = nn.Embedding(output_size, hidden_size)
+    self.dropout = nn.Dropout(dropout_p)
+    self.attn =  nn.Linear(self.hidden_size * 2, self.max_length)
+    self.gru = nn.GRU(hidden_size * 2, hidden_size, n_layers, dropout=dropout_p)
+    self.out = nn.Linear(hidden_size, output_size)
+
+  def forward(self, word_input, last_hidden, encoder_outputs):
+    # Note that we will only be running forward for a single decoder time step, but will use all encoder outputs
+
+    # Get the embedding of the current input word (last output word)
+    word_embedded = self.embedding(word_input).view(1, 1, -1) # S=1 x B x N
+    word_embedded = self.dropout(word_embedded)
+
+    # Calculate attention weights and apply to encoder outputs
+    attn_weights = self.attn(last_hidden[-1], encoder_outputs)
+    context = attn_weights.bmm(encoder_outputs.transpose(0, 1)) # B x 1 x N
+
+    # Combine embedded input word and attended context, run through RNN
+    rnn_input = torch.cat((word_embedded, context), 2)
+    output, hidden = self.gru(rnn_input, last_hidden)
+
+    # Final output layer
+    output = output.squeeze(0) # B x N
+    output = F.log_softmax(self.out(torch.cat((output, context), 1)))
+
+    # Return final output, hidden state, and attention weights (for visualization)
+    return output, hidden, attn_weights
+
 class Model(nn.Module):
   def __init__(self, word2id, hidden_dim=500, embedding_dim=500):
     super().__init__()
@@ -101,21 +146,23 @@ class Model(nn.Module):
     self.word2id = word2id
     self.encoder = Encoder(len(self.word2id.id2w), embedding_dim, hidden_dim)
     self.bilinear = Bilinear(hidden_dim)
+    self.decoder = BahdanauAttnDecoderRNN(hidden_dim, len(self.word2id.id2w))
 
   def forward(self, input, templates):
-    hidden_bilinear_input, hidden_bilinear_templates, hidden_concat_input, hidden_concat_templates = self.encoder(input, templates)
+    batch_size = len(input)
+    hidden_bilinear_input, hidden_bilinear_templates, hidden_concats, mapping1 = self.encoder(input, templates)
     saliency = self.bilinear(hidden_bilinear_input, hidden_bilinear_templates)
 
-    return saliency
+    # Select highest-scoring input-template pair from bilinear
+    max_templates = []
+    for input_template_ids in mapping1:
+      bilinear_ids = [i-batch_size for i in input_template_ids] # Correct because inputs are not at top for bilinear
+      max_input_template_id = saliency[bilinear_ids].max(0)[1]
+      max_templates.append(input_template_ids[max_input_template_id])
 
-# x = [[4, 5, 2], [2, 1], [1, 1, 1, 1]]
-# t = [[[1, 5, 2], [1, 1, 2]], [[2, 5, 2], [2, 1, 2]], [[3, 5, 2, 1], [3, 1, 2]]]
-# x = [torch.tensor(i) for i in x]
-# t = list(map(lambda l: [torch.tensor(ti) for ti in l], t))
-# emd = nn.Embedding(10, 500)
-# e = Encoder(emd)
-# b = Bilinear()
-# bi_in, bi_temp, j = e(x, t)
-# s = b(bi_in, bi_temp)
-#
-# print(s)
+    hc_input = hidden_concats[:batch_size]
+    hc_template = hidden_concats[max_templates]
+    hc = [torch.cat((hi, ht)) for hi, ht in zip(hc_input, hc_template)]
+
+
+    return saliency
