@@ -24,13 +24,12 @@ class Encoder(nn.Module):
     packed_input = pack_sequence(sorted_input)
 
     # Model-model
-    lstm_output, (lstm_hidden, _) = self.lstm(packed_input)
+    _, (lstm_hidden, _) = self.lstm(packed_input)
 
     # Post-model
-    hidden_bilinear_input, hidden_bilinear_templates, mapping1 = self.unpack_bilinear(lstm_hidden, mapping1, mapping2, num_inputs, templates)
-    hidden_concats = self.unpack_decoder(lstm_output, mapping1, mapping2, num_inputs)
+    hidden_bilinear_input, hidden_bilinear_templates = self.unpack_bilinear(lstm_hidden, mapping1, mapping2, num_inputs, templates)
 
-    return hidden_bilinear_input, hidden_bilinear_templates, hidden_concats, mapping1
+    return hidden_bilinear_input, hidden_bilinear_templates, mapping1
 
   def stack_inputs(self, input, templates):
     stacked = input
@@ -65,25 +64,7 @@ class Encoder(nn.Module):
     hidden_bilinear_input = hidden_bilinear[input_indices]
     hidden_bilinear_templates = hidden_bilinear[template_indices]
 
-    return hidden_bilinear_input, hidden_bilinear_templates, mapping1
-
-  def unpack_decoder(self, lstm_output, mapping1, mapping2, num_inputs):
-    unpacked_output, lengths = pad_packed_sequence(lstm_output)
-
-    hidden_concat = []
-    for i in range(len(lengths)):
-      hidden_concat.append(unpacked_output[:lengths[i],i].contiguous().view(lengths[i]*self.hidden_size*2))
-
-    hidden_concat_ordered = np.array(hidden_concat)[mapping2]
-    # hidden_concat_ordered = np.array(hidden_concat)[mapping2]
-    # hidden_concat_input = hidden_concat_ordered[:num_inputs]
-    #
-    # hidden_concat_templates = []
-    # for input_templates in mapping1:
-    #   hidden_concat_templates.append(hidden_concat_ordered[input_templates])
-
-    return hidden_concat_ordered
-
+    return hidden_bilinear_input, hidden_bilinear_templates
 
 class Bilinear(nn.Module):
   def __init__(self, hidden_size=500):
@@ -161,7 +142,7 @@ class Model(nn.Module):
 
   def forward(self, input, templates):
     batch_size = len(input)
-    hidden_bilinear_input, hidden_bilinear_templates, hidden_concats, mapping1 = self.encoder(input, templates)
+    hidden_bilinear_input, hidden_bilinear_templates, mapping1 = self.encoder(input, templates)
     output_states, saliency = self.bilinear(hidden_bilinear_input, hidden_bilinear_templates, mapping1)
 
     return saliency
