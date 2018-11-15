@@ -17,7 +17,7 @@ train_data, _, _, word2id = get_datasets("data/main_data", BATCH_SIZE)
 
 # Model
 model = Model(word2id, HIDDEN_DIM, EMBEDDING_DIM).to(device)
-bilinear_loss_fn = torch.nn.BCELoss()
+bilinear_loss_fn = torch.nn.MSELoss()
 opt = torch.optim.Adam(model.parameters())
 
 # Training loop
@@ -34,7 +34,7 @@ for epoch in range(NUM_EPOCHS):
     # Training step
     opt.zero_grad()
     saliency = model(input, templates)
-    bilinear_loss = bilinear_loss_fn(saliency, torch.randn_like(saliency).float())
+    bilinear_loss = torch.stack([bilinear_loss_fn(sal, torch.randn_like(sal).float()) for sal in saliency]).mean()
     bilinear_loss.backward()
     opt.step()
 

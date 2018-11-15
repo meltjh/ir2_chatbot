@@ -92,10 +92,23 @@ class Bilinear(nn.Module):
     self.bifc = nn.Bilinear(2*hidden_size, 2*hidden_size, 1)
     self.sigmoid = nn.Sigmoid()
 
-  def forward(self, x1, x2):
-    bi_out = self.bifc(x1, x2)
+  def forward(self, x_input, x_templates, mapping1):
+    batch_size = len(mapping1)
+    saliency = self.bifc(x_input, x_templates)
 
-    return self.sigmoid(bi_out)
+    bilinear_mapping = [[i-batch_size for i in batch_ids] for batch_ids in mapping1] # Correct because inputs are not at top for bilinear
+    batched_weights = [F.softmax(saliency[indices], 0) for indices in bilinear_mapping]
+    batched_saliency = [saliency[indices] for indices in bilinear_mapping]
+
+    output_states = []
+    for template_ids, weights in zip(bilinear_mapping, batched_weights):
+      input_state = x_input[template_ids[0]]
+      template_state = (x_templates[template_ids] * weights).sum(0)
+      output_states.append(torch.cat((input_state, template_state)))
+
+    output_states = torch.stack(output_states)
+
+    return output_states, batched_saliency
 
 class BahdanauAttnDecoderRNN(nn.Module):
   def __init__(self, hidden_size, output_size, n_layers=1, dropout_p=0.1):
@@ -142,27 +155,13 @@ class BahdanauAttnDecoderRNN(nn.Module):
 class Model(nn.Module):
   def __init__(self, word2id, hidden_dim=500, embedding_dim=500):
     super().__init__()
-
     self.word2id = word2id
     self.encoder = Encoder(len(self.word2id.id2w), embedding_dim, hidden_dim)
     self.bilinear = Bilinear(hidden_dim)
-    self.decoder = BahdanauAttnDecoderRNN(hidden_dim, len(self.word2id.id2w))
 
   def forward(self, input, templates):
     batch_size = len(input)
     hidden_bilinear_input, hidden_bilinear_templates, hidden_concats, mapping1 = self.encoder(input, templates)
-    saliency = self.bilinear(hidden_bilinear_input, hidden_bilinear_templates)
-
-    # Select highest-scoring input-template pair from bilinear
-    max_templates = []
-    for input_template_ids in mapping1:
-      bilinear_ids = [i-batch_size for i in input_template_ids] # Correct because inputs are not at top for bilinear
-      max_input_template_id = saliency[bilinear_ids].max(0)[1]
-      max_templates.append(input_template_ids[max_input_template_id])
-
-    hc_input = hidden_concats[:batch_size]
-    hc_template = hidden_concats[max_templates]
-    hc = [torch.cat((hi, ht)) for hi, ht in zip(hc_input, hc_template)]
-
+    output_states, saliency = self.bilinear(hidden_bilinear_input, hidden_bilinear_templates, mapping1)
 
     return saliency
