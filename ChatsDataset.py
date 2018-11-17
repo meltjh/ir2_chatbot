@@ -47,6 +47,7 @@ class ChatsDataset(Dataset):
         Create the templates based on the merge type.
         - all: simply append all the sentences from each source.
         - oracle: only append the sentences from the span's source.
+        - ms: mixed-short
         """
         template_list = []
         if merge_type == "all":
@@ -62,6 +63,21 @@ class ChatsDataset(Dataset):
                     if all(elem in sentence for elem in span):
                         template_list = (template)
                         return template_list
+                    
+        elif merge_type == "ms":
+            # Get the length of the sources
+            num_words = {}
+            for source in chat_templates.keys():
+                num_words[source] = sum([len(x) for x in chat_templates[source]])
+            total_words = sum(num_words.keys())
+            
+            # Compute their proportions
+            ratios = num_words.copy()
+            for source in chat_templates.keys():
+                if chat_templates[source] > 0:
+                    ratios[source] /= total_words
+            
+            # TODO: juiste aantal woorden pakken van elke source
 
         return template_list
     
