@@ -20,6 +20,7 @@ def read(filename, word2id, add_new_words):
         for line in json_data:
             # Extracting
             chat = line["chat"]
+            spans = line["spans"]
             documents = line["documents"]
             chat_id = line["chat_id"]
             plot = documents["plot"]
@@ -35,22 +36,15 @@ def read(filename, word2id, add_new_words):
             plot = [x.lstrip().rstrip() for x in plot.split(".")]
             review = [x.lstrip().rstrip() for x in review.split(".")]
 
-            # Formatting templates data
-            templates = []
-            for data in [plot,
-                         review,
-                         comments,
-                         fact_boxoffice,
-                         fact_awards,
-                         fact_taglines,
-                         fact_similar_movies]:
-                if not isinstance(data, list):
-                    data = [data]
-                for sentence in data:
-                    # Obtain ids and add them to the template.
-                    sentence2id = word2id.string2id(sentence, add_new_words)
-                    if len(sentence2id) > 0:
-                        templates.append(sentence2id)
+            # Formatting templates data            
+            templates = {}
+            templates["plot"] = resources_to_id(plot, word2id, add_new_words)
+            templates["review"] = resources_to_id(review, word2id, add_new_words)
+            templates["comments"] = resources_to_id(comments, word2id, add_new_words)
+            templates["fact_boxoffice"] = resources_to_id(fact_boxoffice, word2id, add_new_words)
+            templates["fact_awards"] = resources_to_id(fact_awards, word2id, add_new_words)
+            templates["fact_taglines"] = resources_to_id(fact_taglines, word2id, add_new_words)
+            templates["fact_similar_movies"] = resources_to_id(fact_similar_movies, word2id, add_new_words)
             template_data[chat_id] = templates
 
             # Loop to have pairs of q (even) and a (uneven).
@@ -60,10 +54,21 @@ def read(filename, word2id, add_new_words):
                 # Obtain the ids and add them to the template.
                 sentence_in = word2id.string2id(chat[i])
                 sentence_out = word2id.string2id(chat[i+1])
-                data = {"id":chat_id, "in":sentence_in, "out":sentence_out}
+                span = word2id.string2id(spans[i+1]) # Only take span from response.
+                data = {"id":chat_id, "in":sentence_in, "out":sentence_out, "span": span}
                 user_data.append(data)
 
     return template_data, user_data
+
+def resources_to_id(resource, word2id, add_new_words):
+    if not isinstance(resource, list):
+        resource = [resource]
+    sents2id = []
+    for sentence in resource:
+        sentence2id = word2id.string2id(sentence, add_new_words)
+        if len(sentence2id) > 0:
+            sents2id.append(sentence2id)
+    return sents2id
 
 def print_counts(template_data, user_data):
     # TODO: nog goed maken.
@@ -77,7 +82,6 @@ def print_counts(template_data, user_data):
     plt.hist(template_lengths, bins=max(template_lengths), cumulative=True, alpha=0.25)
     plt.hist(template_lengths, bins=max(template_lengths))
     plt.show()
-
 
     in_lengths = []
     out_lengths = []
@@ -100,7 +104,7 @@ def print_counts(template_data, user_data):
     plt.hist(out_lengths, bins=max(out_lengths))
     plt.show()
 
-def get_single_dataset(filename, word2id, batch_size, is_train, print_freqs = False):
+def get_single_dataset(filename, word2id, batch_size, is_train, merge_type, print_freqs = False):
     """
     Returns a single dataset as dataloader object in batches.
     """
@@ -110,20 +114,20 @@ def get_single_dataset(filename, word2id, batch_size, is_train, print_freqs = Fa
     if print_freqs:
         print_counts(template_data, user_data)
 
-    dataset = ChatsDataset(template_data, user_data)
+    dataset = ChatsDataset(template_data, user_data, merge_type)
     dataloader = DataLoader(dataset, batch_size, collate_fn=dataset.collate)
     return dataloader
 
-def get_datasets(path, batch_size, print_freqs = False):
+def get_datasets(path, batch_size, merge_type, print_freqs = False):
     """
     Returns all three datasets and the word2id object.
     """
     word2id = Word2Id()
-    train_data = get_single_dataset(path + "/train_data.json", word2id, batch_size, True, print_freqs)
-    dev_data = get_single_dataset(path + "/dev_data.json", word2id, batch_size, False, print_freqs)
-    test_data = get_single_dataset(path + "/test_data.json", word2id, batch_size, False, print_freqs)
+    train_data = get_single_dataset(path + "/train_data.json", word2id, batch_size, True, merge_type, print_freqs)
+    dev_data = get_single_dataset(path + "/dev_data.json", word2id, batch_size, False, merge_type, print_freqs)
+    test_data = get_single_dataset(path + "/test_data.json", word2id, batch_size, False, merge_type, print_freqs)
 
     return train_data, dev_data, test_data, word2id
 
 
-#train_data, dev_data, test_data, word2id = get_datasets("data/main_data", 5, False)
+#train_data, dev_data, test_data, word2id = get_datasets("data/main_data", 5, "all", False)

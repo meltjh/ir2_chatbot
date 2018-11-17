@@ -2,8 +2,8 @@ from torch.utils.data import Dataset, DataLoader
 
 class ChatsDataset(Dataset):
 
-    def __init__(self, templates, chats):
-        in_list, out_list, template_list, chat_ids = self.split_data(chats, templates)
+    def __init__(self, templates, chats, merge_type):
+        in_list, out_list, template_list, chat_ids = self.split_data(chats, templates, merge_type)
         self.in_list = in_list
         self.out_list = out_list
         self.template_list = template_list
@@ -22,7 +22,7 @@ class ChatsDataset(Dataset):
         chat_id = self.chat_ids[i]
         return {"in": input, "out": output, "template": template, "chat_id": chat_id}
     
-    def split_data(self, chats, templates):
+    def split_data(self, chats, templates, merge_type):
         """
         Split the data into lists of input, output, the corresponding template and chat ids.
         """
@@ -30,17 +30,44 @@ class ChatsDataset(Dataset):
         out_list = []
         template_list = []
         chat_ids = []
+
         for chat in chats:
             in_list.append(chat["in"])
             out_list.append(chat["out"])
             chat_id = chat["id"]
             chat_ids.append(chat_id)
-            template_list.append(templates[chat_id])
+            span = chat["span"]
+            chat_templates = self.preprocess_templates(templates[chat_id], span, merge_type)
+            template_list.append(chat_templates)
+
         return in_list, out_list, template_list, chat_ids
+    
+    def preprocess_templates(self, chat_templates, span, merge_type):
+        """
+        Create the templates based on the merge type.
+        - all: simply append all the sentences from each source.
+        - oracle: only append the sentences from the span's source.
+        """
+        template_list = []
+        if merge_type == "all":
+            for source in chat_templates.keys():
+                template = chat_templates[source]
+                if len(template) > 0:
+                    template_list.extend(template)
+
+        elif merge_type == "oracle":
+            for source in chat_templates.keys():
+                template = chat_templates[source]
+                for sentence in template:
+                    if all(elem in sentence for elem in span):
+                        template_list = (template)
+                        return template_list
+
+        return template_list
     
     def collate(self, batch):
         """
-        Returns the batch.
+        Returns a single batch.
         """
         inputs = []
         outputs = []
