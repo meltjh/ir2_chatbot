@@ -1,24 +1,35 @@
 import torch
+import torch.nn as nn
 from time import time
-from models import Model
+from models import Model, DecoderRNN
 from read_data import get_datasets
 
 # Params
 NUM_EPOCHS = 10
-BATCH_SIZE = 5
-HIDDEN_DIM = 250
-EMBEDDING_DIM = 250
+BATCH_SIZE = 3#5
+HIDDEN_DIM = 249#7#250
+EMBEDDING_DIM = 250#11#250
+MERGE_TYPE = "all"
 
-print("Epochs: {}, batch size: {}, hidden dim: {}, embedding dim: {}.".format(NUM_EPOCHS, BATCH_SIZE, HIDDEN_DIM, EMBEDDING_DIM))
+print("Merge type: {}, epochs: {}, batch size: {}, hidden dim: {}, embedding dim: {}.".format(MERGE_TYPE, NUM_EPOCHS, BATCH_SIZE, HIDDEN_DIM, EMBEDDING_DIM))
 
 # Init
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-train_data, _, _, word2id = get_datasets("data/main_data", BATCH_SIZE)
-
+train_data, _, _, word2id = get_datasets("data/main_data", BATCH_SIZE, MERGE_TYPE)
+vocab_size = len(word2id.id2w)
 # Model
 model = Model(word2id, HIDDEN_DIM, EMBEDDING_DIM).to(device)
+decoder = DecoderRNN(vocab_size, 4*HIDDEN_DIM, vocab_size).to(device)
 bilinear_loss_fn = torch.nn.MSELoss()
 opt = torch.optim.Adam(model.parameters())
+
+criterion = nn.L1Loss()
+
+# Initialize the bos and eos embeddings.
+tag_bos_emb = torch.zeros(1, 1, vocab_size).to(device)
+tag_bos_emb[0,0,word2id.tag_id_bos] = 1
+#tag_eos_emb = torch.zeros(vocab_size, 1)
+#tag_eos_emb[0,0,word2id.tag_id_eos] = 1
 
 # Training loop
 for epoch in range(NUM_EPOCHS):
@@ -33,9 +44,56 @@ for epoch in range(NUM_EPOCHS):
 
     # Training step
     opt.zero_grad()
-    saliency = model(input, templates)
-    bilinear_loss = torch.stack([bilinear_loss_fn(sal, torch.randn_like(sal).float()) for sal in saliency]).mean()
-    bilinear_loss.backward()
+    saliency, output_states = model(input, templates)
+#    bilinear_loss, output_states = torch.stack([bilinear_loss_fn(sal, torch.randn_like(sal).float()) for sal in saliency]).mean()
+    
+    # target: num_batches x sentence_len with word id's
+
+    train = True
+
+    loss = 0
+    for batch_i in range(output_states.shape[0]):
+      os = output_states[batch_i]
+      if train:
+        prev_h = os.unsqueeze(0)
+        prev_h = prev_h.unsqueeze(0)
+        prev_output = tag_bos_emb
+#        print("prev_h.shape",prev_h.shape)
+#        print("target", target)
+        for target_word_id in target[batch_i]:
+#          print("target_word_id",target_word_id)
+          output, prev_h = decoder(prev_output, prev_h)
+#          print(output.shape)
+          t = torch.zeros(1, len(word2id.id2w)).to(device)
+          t[0,target_word_id] = 1
+#          print(target_word_id)
+          
+#          print("t.type",t.type())
+#          print("output.type",output.type())
+          
+          c = criterion(t, output)
+          
+#          print("c",c.shape)
+          loss += c
+          prev_output = output
+          
+#      else: # test: # TODO
+#        sentence = []
+#        prev_h = output_states
+#        for i in range(max_len):
+#          output, prev_h = self.decoder(prev_output, prev_h)
+#          
+#          sentence.append(output)
+#          
+#          if output == eos:
+#            break
+#          
+#          prev_output = output
+    
+    
+
+    
+    loss.backward()
     opt.step()
 
     # Progress
@@ -48,5 +106,5 @@ for epoch in range(NUM_EPOCHS):
       int((time()-start_time) % 60),
       int(((time()-start_time)/(batch_num+1))*(len(train_data)-(batch_num)) // 60),
       int(((time()-start_time)/(batch_num+1))*(len(train_data)-(batch_num)) % 60),
-      bilinear_loss.item()
+      loss.item()
     ), end='')

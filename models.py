@@ -90,49 +90,8 @@ class Bilinear(nn.Module):
     output_states = torch.stack(output_states)
 
     return output_states, batched_saliency
-
-class BahdanauAttnDecoderRNN(nn.Module):
-  def __init__(self, hidden_size, output_size, n_layers=1, dropout_p=0.1):
-    super(BahdanauAttnDecoderRNN, self).__init__()
-    #TODO max_length definieren
-    max_length = 10
-
-    # Define parameters
-    self.hidden_size = hidden_size
-    self.output_size = output_size
-    self.n_layers = n_layers
-    self.dropout_p = dropout_p
-    self.max_length = max_length
-
-    # Define layers
-    self.embedding = nn.Embedding(output_size, hidden_size)
-    self.dropout = nn.Dropout(dropout_p)
-    self.attn =  nn.Linear(self.hidden_size * 2, self.max_length)
-    self.gru = nn.GRU(hidden_size * 2, hidden_size, n_layers, dropout=dropout_p)
-    self.out = nn.Linear(hidden_size, output_size)
-
-  def forward(self, word_input, last_hidden, encoder_outputs):
-    # Note that we will only be running forward for a single decoder time step, but will use all encoder outputs
-
-    # Get the embedding of the current input word (last output word)
-    word_embedded = self.embedding(word_input).view(1, 1, -1) # S=1 x B x N
-    word_embedded = self.dropout(word_embedded)
-
-    # Calculate attention weights and apply to encoder outputs
-    attn_weights = self.attn(last_hidden[-1], encoder_outputs)
-    context = attn_weights.bmm(encoder_outputs.transpose(0, 1)) # B x 1 x N
-
-    # Combine embedded input word and attended context, run through RNN
-    rnn_input = torch.cat((word_embedded, context), 2)
-    output, hidden = self.gru(rnn_input, last_hidden)
-
-    # Final output layer
-    output = output.squeeze(0) # B x N
-    output = F.log_softmax(self.out(torch.cat((output, context), 1)))
-
-    # Return final output, hidden state, and attention weights (for visualization)
-    return output, hidden, attn_weights
-
+      
+      
 class Model(nn.Module):
   def __init__(self, word2id, hidden_dim=500, embedding_dim=500):
     super().__init__()
@@ -141,8 +100,31 @@ class Model(nn.Module):
     self.bilinear = Bilinear(hidden_dim)
 
   def forward(self, input, templates):
-    batch_size = len(input)
     hidden_bilinear_input, hidden_bilinear_templates, mapping1 = self.encoder(input, templates)
     output_states, saliency = self.bilinear(hidden_bilinear_input, hidden_bilinear_templates, mapping1)
 
-    return saliency
+    return saliency, output_states
+
+class DecoderRNN(nn.Module):
+  def __init__(self, embedding_dim, hidden_size, output_size):
+    super(DecoderRNN, self).__init__()
+    
+    self.gru = nn.GRU(embedding_dim, hidden_size, 1)
+    self.out = nn.Linear(hidden_size, output_size)
+    self.softmax = nn.LogSoftmax(dim=1)
+
+  def forward(self, prev_output, hidden):
+    
+    
+#    print("prev_output.shape", prev_output.shape)   # emb 11
+#    print("hidden.shape in", hidden.shape)          # 4x  28
+    
+    
+#    print("prev_output.type",prev_output.type())
+#    print("hidden.type", hidden.type())
+    output, hidden = self.gru(prev_output, hidden)
+#    print("hidden.shape out", hidden.shape)         # 4x  28
+#    print("output.shape before",output.shape)       # 4x  28
+    output = self.softmax(self.out(output))
+#    print("output.shape after",output.shape)        # emb 11
+    return output, hidden
