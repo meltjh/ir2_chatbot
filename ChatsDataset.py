@@ -49,6 +49,9 @@ class ChatsDataset(Dataset):
         - oracle: only append the sentences from the span's source.
         - ms: mixed-short
         """
+        
+        assert merge_type in ('all', 'oracle', 'ms')
+        
         template_list = []
         if merge_type == "all":
             for source in chat_templates.keys():
