@@ -9,6 +9,7 @@ class Word2Id:
     self.TAG_UNK = "<UNK>"
     self.TAG_BOS = "<BOS>"
     self.TAG_EOS = "<EOS>"
+    self.TAG_PAD = "<PAD>"
     
     self.w2id = defaultdict(lambda:len(self.w2id))
     self.id2w = []
@@ -18,10 +19,12 @@ class Word2Id:
     self.tag_id_unk = 0
     self.tag_id_bos = 1
     self.tag_id_eos = 2
+    self.tag_id_pad = 3
     # This part is to ensure it is all correctly represented in the mappings.
     self.string2id(self.TAG_UNK) # Give UNK id 0.
     self.string2id(self.TAG_BOS) # Give BOS id 1.
     self.string2id(self.TAG_EOS) # Give EOS id 2.
+    self.string2id(self.TAG_PAD) # Give PAD id 3.
      
   def string2id(self, data, add_new_words = True):
     """
