@@ -1,4 +1,5 @@
 from torch.utils.data import Dataset, DataLoader
+import numpy as np
 
 class ChatsDataset(Dataset):
 
@@ -92,11 +93,19 @@ class ChatsDataset(Dataset):
         outputs = []
         templates = []
         chat_ids = []
-        
+        lengths = []
+                
         for item in batch:
             inputs.append(item["in"])
             outputs.append(item["out"])
             templates.append(item["template"])
             chat_ids.append(item["chat_id"])
+            lengths.append(len(item["in"]))
+        
+        idx_desc = np.argsort(lengths)[::-1]
+        sorted_inputs = [inputs[i] for i in idx_desc]
+        sorted_outputs = [outputs[i] for i in idx_desc]
+        sorted_templates = [templates[i] for i in idx_desc]
+        sorted_chat_ids = [chat_ids[i] for i in idx_desc]
 
-        return inputs, outputs, templates, chat_ids
+        return sorted_inputs, sorted_outputs, sorted_templates, sorted_chat_ids
