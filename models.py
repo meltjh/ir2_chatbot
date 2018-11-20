@@ -123,39 +123,40 @@ class DecoderRNN(nn.Module):
   
 
   
-class DecoderFullSentences(nn.Module):
-  def __init__(self, vocab_size, hidden_size, output_size, device):
-    super(DecoderFullSentences, self).__init__()
-  
-    self.device = device
-    self.vocab_size = vocab_size
-    
-    
-    self.decoder = DecoderRNN(vocab_size, hidden_size, output_size)
-  
-  def forward(self, initial_token_id, output_states, target):
-    """
-    Initial_output is the initial token index.
-    """
-    batch_size = output_states.shape[0]
-    
-    tag_bos_emb = torch.zeros(1, batch_size, self.vocab_size).to(self.device)
-    tag_bos_emb[0,:,initial_token_id] = 1
-
-    sorted_target = target
-    
-    print(len(sorted_target))
-    print(sorted_target[0].shape)
-    print(sorted_target[1].shape)
+#class DecoderFullSentences(nn.Module):
+#  def __init__(self, vocab_size, hidden_size, output_size, device):
+#    super(DecoderFullSentences, self).__init__()
+#  
+#    self.device = device
+#    self.vocab_size = vocab_size
+#    
+#    
+#    self.decoder = DecoderRNN(vocab_size, hidden_size, output_size)
+#  
+#  def forward(self, initial_token_id, output_states, target):
+#    """
+#    Initial_output is the initial token index.
+#    """
+#    batch_size = output_states.shape[0]
+#    
+#    tag_bos_emb = torch.zeros(1, batch_size, self.vocab_size).to(self.device)
+#    tag_bos_emb[0,:,initial_token_id] = 1
+#
+#    sorted_target = target
+#    
+#    print(len(sorted_target))
+#    print(sorted_target[0].shape)
+#    print(sorted_target[1].shape)
+#    print(sorted_target[2].shape)
+##    raise NotImplementedError("~~~~~")
+#    
+#    packed_output_states = pack_sequence(sorted_target)
+#    
 #    raise NotImplementedError("~~~~~")
-    
-    packed_output_states = pack_sequence(sorted_target)
-    
-    raise NotImplementedError("~~~~~")
-    
-    output, prev_h = self.decoder(tag_bos_emb, packed_output_states)
-    
-    print("waha")
+#    
+#    output, prev_h = self.decoder(tag_bos_emb, packed_output_states)
+#    
+#    print("waha")
     
     
     
