@@ -102,10 +102,11 @@ class ChatsDataset(Dataset):
             chat_ids.append(item["chat_id"])
             lengths.append(len(item["in"]))
         
-        idx_desc = np.argsort(lengths)[::-1]
-        sorted_inputs = [inputs[i] for i in idx_desc]
-        sorted_outputs = [outputs[i] for i in idx_desc]
-        sorted_templates = [templates[i] for i in idx_desc]
-        sorted_chat_ids = [chat_ids[i] for i in idx_desc]
+#        idx_desc = np.argsort(lengths)[::-1]
+#        sorted_inputs = [inputs[i] for i in idx_desc]
+#        sorted_outputs = [outputs[i] for i in idx_desc]
+#        sorted_templates = [templates[i] for i in idx_desc]
+#        sorted_chat_ids = [chat_ids[i] for i in idx_desc]
 
-        return sorted_inputs, sorted_outputs, sorted_templates, sorted_chat_ids
+#        return sorted_inputs, sorted_outputs, sorted_templates, sorted_chat_ids
+        return inputs, outputs, templates, chat_ids
