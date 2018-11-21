@@ -4,7 +4,6 @@ import torch.nn.functional as F
 import numpy as np
 from torch.nn.utils.rnn import pack_sequence, pad_packed_sequence
 
-
 def sort_inputs(input):
   order = list(reversed(sorted(range(len(input)), key=lambda i: len(input[i]))))
   sorted_input = np.array(input)[order]
@@ -14,33 +13,32 @@ def sort_inputs(input):
   for i, j in enumerate(order):
     mapping[j] = i
 
-  return sorted_input, mapping
+  return sorted_input, mapping, order
 
 class Encoder(nn.Module):
-  def __init__(self, vocab_size, embedding_dim, hidden_size):
+  def __init__(self, embeddings, hidden_size):
     super().__init__()
 
     self.hidden_size = hidden_size
-    self.embedding_dim = embedding_dim
-    self.emb = nn.Embedding(vocab_size, self.embedding_dim)
-    self.lstm = nn.LSTM(self.embedding_dim, self.hidden_size, num_layers=2, bidirectional=True)
+    self.embeddings = embeddings
+    self.lstm = nn.LSTM(self.embeddings.embedding_dim, self.hidden_size, num_layers=2, bidirectional=True)
 
   def forward(self, input, templates):
     num_inputs = len(input)
 
     # Pre-model
-    stacked_input, mapping1 = self.stack_inputs(input, templates)
-    embedded_input = [self.emb(x) for x in stacked_input]
-    sorted_input, mapping2 = sort_inputs(embedded_input)
+    stacked_input, stack_mapping = self.stack_inputs(input, templates)
+    embedded_input = [self.embeddings(x) for x in stacked_input]
+    sorted_input, sort_mapping, _ = sort_inputs(embedded_input)
     packed_input = pack_sequence(sorted_input)
 
     # Model-model
     _, (lstm_hidden, _) = self.lstm(packed_input)
 
     # Post-model
-    hidden_bilinear_input, hidden_bilinear_templates = self.unpack_bilinear(lstm_hidden, mapping1, mapping2, num_inputs, templates)
+    bilinear_inputs, bilinear_templates = self.unpack_bilinear(lstm_hidden, stack_mapping, sort_mapping, num_inputs, templates)
 
-    return hidden_bilinear_input, hidden_bilinear_templates, mapping1
+    return bilinear_inputs, bilinear_templates, stack_mapping
 
   @staticmethod
   def stack_inputs(input, templates):
@@ -68,11 +66,10 @@ class Encoder(nn.Module):
     return hidden_bilinear_input, hidden_bilinear_templates
 
 class Bilinear(nn.Module):
-  def __init__(self, hidden_size=500):
+  def __init__(self, hidden_size):
     super().__init__()
 
     self.bifc = nn.Bilinear(2*hidden_size, 2*hidden_size, 1)
-    self.sigmoid = nn.Sigmoid()
 
   def forward(self, x_input, x_templates, mapping1):
     batch_size = len(mapping1)
@@ -91,77 +88,68 @@ class Bilinear(nn.Module):
     output_states = torch.stack(output_states)
 
     return output_states, batched_saliency
-      
-      
+
+
 class Model(nn.Module):
-  def __init__(self, word2id, hidden_dim=500, embedding_dim=500):
+  def __init__(self, word2id, hidden_size, embedding_size):
     super().__init__()
     self.word2id = word2id
-    self.encoder = Encoder(len(self.word2id.id2w), embedding_dim, hidden_dim)
-    self.bilinear = Bilinear(hidden_dim)
+    self.vocab_size = len(self.word2id.id2w)
 
-  def forward(self, input, templates):
-    hidden_bilinear_input, hidden_bilinear_templates, mapping1 = self.encoder(input, templates)
-    output_states, saliency = self.bilinear(hidden_bilinear_input, hidden_bilinear_templates, mapping1)
+    self.embeddings = nn.Embedding(self.vocab_size, embedding_size)
+    self.encoder = Encoder(self.embeddings, hidden_size)
+    self.bilinear = Bilinear(hidden_size)
+    self.decoder = Decoder(self.embeddings, hidden_size)
 
-    return saliency, output_states
+  def forward(self, input, target, templates):
+    bilinear_inputs, bilinear_templates, stack_mapping = self.encoder(input, templates)
+    template_state, saliency = self.bilinear(bilinear_inputs, bilinear_templates, stack_mapping)
+    response = self.decoder(target, template_state)
 
-class DecoderRNN(nn.Module):
-  def __init__(self, embedding_dim, hidden_size, output_size):
-    super(DecoderRNN, self).__init__()
-    
-    self.gru = nn.GRU(embedding_dim, hidden_size, 1)
-    self.out = nn.Linear(hidden_size, output_size)
-    self.softmax = nn.LogSoftmax(dim=1)
+    return saliency, response
 
-  def forward(self, prev_output, hidden):
-    output, hidden = self.gru(prev_output, hidden)
-    output = self.softmax(self.out(output))
-    return output, hidden
-  
-  
-  
+class Decoder(nn.Module):
+  def __init__(self, embeddings, hidden_size):
+    super().__init__()
 
-  
-#class DecoderFullSentences(nn.Module):
-#  def __init__(self, vocab_size, hidden_size, output_size, device):
-#    super(DecoderFullSentences, self).__init__()
-#  
-#    self.device = device
-#    self.vocab_size = vocab_size
-#    
-#    
-#    self.decoder = DecoderRNN(vocab_size, hidden_size, output_size)
-#  
-#  def forward(self, initial_token_id, output_states, target):
-#    """
-#    Initial_output is the initial token index.
-#    """
-#    batch_size = output_states.shape[0]
-#    
-#    tag_bos_emb = torch.zeros(1, batch_size, self.vocab_size).to(self.device)
-#    tag_bos_emb[0,:,initial_token_id] = 1
-#
-#    sorted_target = target
-#    
-#    print(len(sorted_target))
-#    print(sorted_target[0].shape)
-#    print(sorted_target[1].shape)
-#    print(sorted_target[2].shape)
-##    raise NotImplementedError("~~~~~")
-#    
-#    packed_output_states = pack_sequence(sorted_target)
-#    
-#    raise NotImplementedError("~~~~~")
-#    
-#    output, prev_h = self.decoder(tag_bos_emb, packed_output_states)
-#    
-#    print("waha")
-    
-    
-    
-    
-    
-    
-    
-    
+    self.embeddings = embeddings
+    self.gru = nn.GRU(self.embeddings.embedding_dim, 4*hidden_size)
+    self.out = nn.Linear(4*hidden_size, self.embeddings.num_embeddings)
+    self.softmax = nn.LogSoftmax(1)
+
+  def forward(self, target, template_state):
+    embedded_targets = [self.embeddings(x) for x in target]
+    sorted_targets, sort_map_backward, sort_map_forward  = sort_inputs(embedded_targets)
+    sorted_template_states = template_state[sort_map_forward]
+    packed_targets = pack_sequence(sorted_targets)
+    gru_output, _ = self.gru(packed_targets, template_state.unsqueeze(0))
+    unpacked_gru_output, sequence_lengths = self.unpack_gru_output(gru_output)
+    softmax_output = self.softmax(self.out(unpacked_gru_output))
+    split_output = self.split_softmax_output(softmax_output, sequence_lengths)
+    output = split_output[sort_map_backward]
+
+    return output
+
+  @staticmethod
+  def unpack_gru_output(gru_output):
+    gru_padded_output, sequence_lengths = pad_packed_sequence(gru_output)
+
+    batch_indices = []
+    word_indices = []
+    for batch, sequence_length in enumerate(sequence_lengths):
+      batch_indices += [batch]*sequence_length.item()
+      word_indices += list(range(sequence_length))
+
+    stacked_unpadded_output = gru_padded_output[word_indices, batch_indices]
+
+    return stacked_unpadded_output, sequence_lengths
+
+  @staticmethod
+  def split_softmax_output(softmax_output, sequence_lengths):
+    split_output = []
+    start_index = 0
+    for sequence_length in sequence_lengths:
+      split_output.append(softmax_output[start_index:start_index+sequence_length])
+      start_index += sequence_length
+
+    return np.array(split_output)
