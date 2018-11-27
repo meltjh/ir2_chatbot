@@ -26,13 +26,20 @@ class Word2Id:
     self.string2id(self.TAG_EOS) # Give EOS id 2.
     self.string2id(self.TAG_PAD) # Give PAD id 3.
 
-  def most_common2id(self, most_common):
+  def most_common2id(self, most_common, glove_embeddings, top_n):
       """
       Add the most_common words to Word2Id.
       Input: the list of tuples with the most common words and their frequencies.
       """
+      i = 0
       for word, _ in most_common:
-          self._process_single_string(word, True)
+          if i < top_n:
+              if word in glove_embeddings:
+                  self._process_single_string(word, True)
+                  i += 1
+          else:
+              print("The top {} words are added".format(i))
+              break
           
   def datapoint2id(self, question, answer, resources):
       question2id = self.string2id(question)
