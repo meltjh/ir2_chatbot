@@ -4,9 +4,9 @@ from ChatsDataset import ChatsDataset
 from torch.utils.data import Dataset, DataLoader
 from word2id import Word2Id
 import matplotlib.pyplot as plt
-from embeddings import get_embedding_vectors
+import time
 
-def read(filename, word2id, add_new_words):
+def read(filename, word2id, add_new_words, glove_vocab = None):
     """
     Returns: template_data, user_data. Both as id's
     template_data: {chat_id:[template1,...]}
@@ -16,7 +16,9 @@ def read(filename, word2id, add_new_words):
     all_data = []
     all_words = []
     all_data2id = []
-
+    
+    print("Reading the file")
+    start = time.time()
     with open(filename) as file:
         json_data = json.load(file)
         data = json_data["data"]
@@ -42,20 +44,26 @@ def read(filename, word2id, add_new_words):
             if add_new_words:
                 all_data.append({"qa_id": qa_id, "question": question, "answer": answer, 
                                  "answer_start": answer_start, "resources": resources})
-    
+
             # if testing or validation, can already convert to ids
             else:
                 question2id, answer2id, resources2id = word2id.datapoint2id(question, answer, resources)
                 all_data2id.append({"qa_id": qa_id, "question": question2id, "answer": answer2id, 
                                     "answer_start": answer_start, "resources": resources2id})
-            
+    
+    end = time.time()
+    print("-- Finished reading the file")
+    print("It took {}s\n".format(end-start))
+    start = time.time()
     # if training, have to get the most common words first
     if add_new_words:
-    # get the most common words that occur in the GLoVE set and convert them to ids
-        glove_embeddings, _ = get_embedding_vectors(300)
+        print("Adding words to the word2id")
+        
+        # get the most common words that occur in the GLoVE set and convert them to ids
         counter = Counter(all_words)
         most_common = counter.most_common()
-        word2id.most_common2id(most_common, glove_embeddings, 20000)
+        word2id.most_common2id(most_common, glove_vocab, 20000)
+        print("Getting the training set\n")
         # convert all the data to ids
         for datapoint in all_data:
             qa_id = datapoint["qa_id"]
@@ -69,6 +77,9 @@ def read(filename, word2id, add_new_words):
             all_data2id.append({"qa_id": qa_id, "question": question2id, 
                                 "answer": answer2id, "answer_start": answer_start, 
                                 "resources": resources2id})
+        end = time.time()
+        print("Finished adding words to the word2id")
+        print("It took {}s\n".format(end-start))
 
     return all_data2id
 
@@ -106,11 +117,12 @@ def print_counts(template_data, user_data):
     plt.hist(out_lengths, bins=max(out_lengths))
     plt.show()
 
-def get_single_dataset(filename, word2id, batch_size, is_train, merge_type, print_freqs = False):
+def get_single_dataset(filename, word2id, batch_size, is_train, glove_vocab = None, print_freqs = False):
     """
     Returns a single dataset as dataloader object in batches.
     """
-    data = read(filename, word2id, is_train)
+    print("Processing file {}".format(filename))
+    data = read(filename, word2id, is_train, glove_vocab)
 
     # Print frequencies for data analysis.
     # TODO: fix print_counts for new version
@@ -119,19 +131,18 @@ def get_single_dataset(filename, word2id, batch_size, is_train, merge_type, prin
 
     dataset = ChatsDataset(data)
     dataloader = DataLoader(dataset, batch_size, collate_fn=dataset.collate)
+    print("-- Finished processing file {}\n".format(filename))
     return dataloader
 
-def get_datasets(path, batch_size, print_freqs = False):
+def get_datasets(path, batch_size, glove_vocab = None, print_freqs = False):
     """
     Returns all three datasets and the word2id object.
     """
-    print("Getting the datasets\n")
+    print("==== Getting the datasets ====\n")
     word2id = Word2Id()
-    train_data = get_single_dataset(path + "train-v1.1.json", word2id, batch_size, True, print_freqs)
+    train_data = get_single_dataset(path + "train-v1.1.json", word2id, batch_size, True, glove_vocab, print_freqs)
     dev_data = get_single_dataset(path + "/dev-v1.1.json", word2id, batch_size, False, print_freqs)
     test_data = get_single_dataset(path + "/test-v1.1.json", word2id, batch_size, False, print_freqs)
+    print("==== Finished getting the datasets ====\n")
 
     return train_data, dev_data, test_data, word2id
-
-
-train_data, dev_data, test_data, word2id = get_datasets("data/experiment_data/bidaf/oracle_short/", 5, False)

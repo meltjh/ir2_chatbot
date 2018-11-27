@@ -3,6 +3,7 @@ import torch.nn as nn
 from time import time
 from models import Model
 from read_data import get_datasets
+from embeddings import get_glove_embeddings, get_embeddings_matrix
 
 # Params
 NUM_EPOCHS = 10
@@ -15,15 +16,19 @@ print("Merge type: {}, epochs: {}, batch size: {}, hidden dim: {}, embedding dim
 
 # Init
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-train_data, _, _, word2id = get_datasets("data/experiment_data/bidaf/oracle_short/", BATCH_SIZE, False)
+glove_vocab, glove_embeddings = get_glove_embeddings(EMBEDDING_DIM)
+train_data, _, _, word2id = get_datasets("data/experiment_data/bidaf/oracle_short/", BATCH_SIZE, glove_vocab, False)
 vocab_size = len(word2id.id2w)
+embeddings_matrix = get_embeddings_matrix(glove_embeddings, word2id, vocab_size, EMBEDDING_DIM)
 
 # Model
-model = Model(word2id, HIDDEN_DIM, EMBEDDING_DIM).to(device)
+model = Model(word2id, HIDDEN_DIM, EMBEDDING_DIM, embeddings_matrix).to(device)
+# model.embeddings.weight.data.copy_(torch.from_numpy(embeddings_matrix))
 
 bilinear_loss_fn = nn.MSELoss()
 decoder_loss_fn = nn.NLLLoss()
-opt = torch.optim.Adam(model.parameters())
+parameters = filter(lambda p: p.requires_grad, model.parameters())
+opt = torch.optim.Adam(parameters)
 
 # Training loop
 for epoch in range(NUM_EPOCHS):

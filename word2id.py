@@ -1,5 +1,7 @@
 from collections import defaultdict
 import re
+import time
+
 
 class Word2Id:
   def __init__(self):
@@ -21,24 +23,39 @@ class Word2Id:
     self.tag_id_eos = 2
     self.tag_id_pad = 3
     # This part is to ensure it is all correctly represented in the mappings.
-    self.string2id(self.TAG_UNK) # Give UNK id 0.
-    self.string2id(self.TAG_BOS) # Give BOS id 1.
-    self.string2id(self.TAG_EOS) # Give EOS id 2.
-    self.string2id(self.TAG_PAD) # Give PAD id 3.
+    self.string2id(self.TAG_UNK, True) # Give UNK id 0.
+    self.string2id(self.TAG_BOS, True) # Give BOS id 1.
+    self.string2id(self.TAG_EOS, True) # Give EOS id 2.
+    self.string2id(self.TAG_PAD, True) # Give PAD id 3.
 
   def most_common2id(self, most_common, glove_embeddings, top_n):
       """
       Add the most_common words that occurs in the GLoVE set to Word2Id.
       Input: the list of tuples with the most common words and their frequencies.
       """
+      print("Start getting the top {} words".format(top_n))
+      start = time.time()
       i = 0
-      for word, _ in most_common:
+      
+      print("Size of GLoVE: {}".format(len(glove_embeddings)))
+      # Only get the words that occur in both the dataset and the glove embeddings,
+      # so that it is not needed to loop through the whole glove set.
+      
+      most_common_words = [word for word, _ in most_common]
+      
+      intersection = list(set(most_common_words).intersection(glove_embeddings))
+      print("Size of the intersection: {}".format(len(intersection)))
+      
+      for word in most_common_words:
           if i < top_n:
-              if word in glove_embeddings:
+              if word in intersection:
                   self._process_single_string(word, True)
                   i += 1
           else:
               break
+      end = time.time()
+      print("-- Finished getting the top {} words".format(top_n))
+      print("It took {}s\n".format(end-start))
           
   def datapoint2id(self, question, answer, resources):
       """
@@ -46,25 +63,24 @@ class Word2Id:
       Input: question and answer as strings and resources as list of strings.
       Output: question and answer as list of ids and resources as list of lists of ids.
       """
-      question2id = self.string2id(question)
-      answer2id = self.string2id(answer)
+      question2id = self.string2id(question, False)
+      answer2id = self.string2id(answer, False)
       resources2id = []
       for resource in resources:
-          resources2id.append(self.string2id(resource))
+          resources2id.append(self.string2id(resource, False))
       
       return question2id, answer2id, resources2id
       
-  def string2id(self, data):
+  def string2id(self, data, add_new_words):
     """
     Input: data as a single word or a sentence.
     Output: the data as a list of ids and updates the w2id.
     Note that the bos and eos tags are added as well.
     """
     # Instead of data.split(), the re is used to split special characters as individual words, too.
-    
     list_ids = [self.tag_id_bos] # Add begin of sentence tag.
-    for word in data:
-      wid = self._process_single_string(word, False)
+    for word in data.split():
+      wid = self._process_single_string(word, add_new_words)
       list_ids.append(wid)
     list_ids.append(self.tag_id_eos) # Add end of sentence tag.
         
