@@ -70,10 +70,11 @@ class Bilinear(nn.Module):
     super().__init__()
 
     self.bifc = nn.Bilinear(2*hidden_size, 2*hidden_size, 1)
+    self.sigmoid = nn.Sigmoid()
 
   def forward(self, x_input, x_templates, mapping1):
     batch_size = len(mapping1)
-    saliency = self.bifc(x_input, x_templates)
+    saliency = self.sigmoid(self.bifc(x_input, x_templates))
 
     bilinear_mapping = [[i-batch_size for i in batch_ids] for batch_ids in mapping1] # Correct because inputs are not at top for bilinear
     batched_weights = [F.softmax(saliency[indices], 0) for indices in bilinear_mapping]
@@ -108,6 +109,12 @@ class Model(nn.Module):
 
     return saliency, response
 
+  def respond(self, device, word2id, input, templates, max_length=100):
+    bilinear_input, bilinear_templates, stack_mapping = self.encoder(input, templates)
+    template_state, saliency = self.bilinear(bilinear_input, bilinear_templates, stack_mapping)
+
+    return self.decoder.generate(word2id, template_state, max_length, device)
+
 class Decoder(nn.Module):
   def __init__(self, embeddings, hidden_size):
     super().__init__()
@@ -115,7 +122,7 @@ class Decoder(nn.Module):
     self.embeddings = embeddings
     self.gru = nn.GRU(self.embeddings.embedding_dim, 4*hidden_size)
     self.out = nn.Linear(4*hidden_size, self.embeddings.num_embeddings)
-    self.softmax = nn.LogSoftmax(1)
+    self.softmax = nn.LogSoftmax(-1)
 
   def forward(self, target, template_state):
     embedded_targets = [self.embeddings(x) for x in target]
@@ -129,6 +136,29 @@ class Decoder(nn.Module):
     output = split_output[sort_map_backward]
 
     return output
+
+  def generate(self, word2id, hidden_state, max_length, device):
+    hidden_state = hidden_state.unsqueeze(0)
+    sentence = [torch.tensor([word2id.tag_id_bos]).long().to(device)]
+
+    for i in range(max_length-2):
+      prev_word = self.embeddings(sentence[-1]).unsqueeze(0)
+      gru_output, hidden_state = self.gru(prev_word, hidden_state)
+      linear_out = self.out(gru_output)
+      softmax_output = self.softmax(linear_out)
+      next_word = softmax_output.argmax().unsqueeze(0)
+      sentence.append(next_word)
+
+      if next_word == word2id.tag_id_eos:
+        break
+
+    if len(sentence) > max_length-2:
+      sentence.append(torch.tensor([word2id.tag_id_eos]).long().to(device))
+
+    sentence = torch.cat(sentence)
+    string = word2id.id2string(sentence)
+
+    return sentence, string
 
   @staticmethod
   def unpack_gru_output(gru_output):

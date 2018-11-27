@@ -7,7 +7,7 @@ from read_data import get_datasets
 # Params
 NUM_EPOCHS = 10
 BATCH_SIZE = 3#5
-HIDDEN_DIM = 7#250
+HIDDEN_DIM = 50#250
 EMBEDDING_DIM = 11#250
 MERGE_TYPE = "oracle"
 
@@ -18,7 +18,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 train_data, _, _, word2id = get_datasets("data/experiment_data/bidaf/oracle_short/", BATCH_SIZE, False)
 vocab_size = len(word2id.id2w)
 
-# Model
+# %% Model
 model = Model(word2id, HIDDEN_DIM, EMBEDDING_DIM).to(device)
 
 bilinear_loss_fn = nn.MSELoss()
@@ -46,6 +46,11 @@ for epoch in range(NUM_EPOCHS):
     (bilinear_loss + decoder_loss).backward()
     opt.step()
 
+    response, _ = model.respond(device, word2id, input[:1], templates[:1], max_length=20)
+    print('\nInput: \t\t {}'.format(' '.join([word2id.id2w[x] for x in input[0]])))
+    print('Response: \t {}'.format(' '.join([word2id.id2w[x] for x in response])))
+    asd
+
     # Progress
     print('\rEpoch {:03d}/{:03d} Example {:05d}/{:05d} ({:02d}:{:02d}/{:02d}:{:02d}) | Bilinear loss: {:.2f}, Decoder loss: {:.2f}'.format(
       epoch+1,
@@ -59,3 +64,8 @@ for epoch in range(NUM_EPOCHS):
       bilinear_loss.item(),
       decoder_loss.item()
     ), end='')
+
+# %%
+import importlib, models
+importlib.reload(models)
+from models import Model
