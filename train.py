@@ -8,8 +8,8 @@ from embeddings import get_glove_embeddings, get_embeddings_matrix
 # Params
 NUM_EPOCHS = 10
 BATCH_SIZE = 3#5
-HIDDEN_DIM = 50#250
-EMBEDDING_DIM = 300#250
+HIDDEN_DIM = 5#250
+EMBEDDING_DIM = 50#250
 MERGE_TYPE = "oracle"
 
 print("Merge type: {}, epochs: {}, batch size: {}, hidden dim: {}, embedding dim: {}.".format(MERGE_TYPE, NUM_EPOCHS, BATCH_SIZE, HIDDEN_DIM, EMBEDDING_DIM))
@@ -35,18 +35,20 @@ for epoch in range(NUM_EPOCHS):
   start_time = time()
   for batch_num, batch in enumerate(train_data):
     # Get batch
-    input, target, templates, _ = tuple(batch)
+    input, target, templates, _, true_saliencies = tuple(batch)
 
     input = [torch.tensor(i).long().to(device) for i in input]
     target = [torch.tensor(i).long().to(device) for i in target]
     templates = list(map(lambda l: [torch.tensor(i).long().to(device) for i in l], templates))
+    true_saliencies = [torch.tensor(i).float().to(device).unsqueeze(1) for i in true_saliencies]
+
 
     # Training step
     opt.zero_grad()
     saliency, response = model(input, target, templates)
 
     decoder_loss = torch.stack([decoder_loss_fn(res, tar) for res, tar in zip(response, target)]).mean()
-    bilinear_loss = torch.stack([bilinear_loss_fn(sal, torch.randn_like(sal).float()) for sal in saliency]).mean()
+    bilinear_loss = torch.stack([bilinear_loss_fn(sal, true_sal) for sal, true_sal in zip(saliency, true_saliencies)]).mean()
 
     (bilinear_loss + decoder_loss).backward()
     opt.step()
