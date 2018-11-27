@@ -25,18 +25,35 @@ class Word2Id:
     self.string2id(self.TAG_BOS) # Give BOS id 1.
     self.string2id(self.TAG_EOS) # Give EOS id 2.
     self.string2id(self.TAG_PAD) # Give PAD id 3.
-     
-  def string2id(self, data, add_new_words = True):
+
+  def most_common2id(self, most_common):
+      """
+      Add the most_common words to Word2Id.
+      Input: the list of tuples with the most common words and their frequencies.
+      """
+      for word, _ in most_common:
+          self._process_single_string(word, True)
+          
+  def datapoint2id(self, question, answer, resources):
+      question2id = self.string2id(question)
+      answer2id = self.string2id(answer)
+      resources2id = []
+      for resource in resources:
+          resources2id.append(self.string2id(resource))
+      
+      return question2id, answer2id, resources2id
+      
+  def string2id(self, data):
     """
     Input: data as a single word or a sentence.
     Output: the data as a list of ids and updates the w2id.
     Note that the bos and eos tags are added as well.
     """
-    # Instead of data.split(), the re is used to split spcial characters as individual words, too.
-    list_words = re.findall(r"[\w']+|[.,!?;()\"]", data)
+    # Instead of data.split(), the re is used to split special characters as individual words, too.
+    
     list_ids = [self.tag_id_bos] # Add begin of sentence tag.
-    for word in list_words:
-      wid = self._process_single_string(word, add_new_words)
+    for word in data:
+      wid = self._process_single_string(word, False)
       list_ids.append(wid)
     list_ids.append(self.tag_id_eos) # Add end of sentence tag.
         
@@ -88,4 +105,4 @@ class Word2Id:
     
     # Remove the last space.
     string = string[:-1]
-    return string
+    return strings

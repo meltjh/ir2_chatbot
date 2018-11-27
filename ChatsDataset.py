@@ -3,110 +3,56 @@ import numpy as np
 
 class ChatsDataset(Dataset):
 
-    def __init__(self, templates, chats, merge_type):
-        in_list, out_list, template_list, chat_ids = self.split_data(chats, templates, merge_type)
-        self.in_list = in_list
-        self.out_list = out_list
-        self.template_list = template_list
-        self.chat_ids = chat_ids
+    def __init__(self, data):
+        question_list, answer_list, resources_list, qa_ids = self.split_data(data)
+        self.question_list = question_list
+        self.answer_list = answer_list
+        self.resources_list = resources_list
+        self.qa_ids = qa_ids
 
     def __len__(self):
-        return len(self.in_list)
+        return len(self.question_list)
 
     def __getitem__(self, i):
         """
         Return current item.
         """
-        input = self.in_list[i]
-        output = self.out_list[i]
-        template = self.template_list[i]
-        chat_id = self.chat_ids[i]
-        return {"in": input, "out": output, "template": template, "chat_id": chat_id}
+        question = self.question_list[i]
+        answer = self.answer_list[i]
+        resources = self.resources_list[i]
+        qa_id = self.qa_ids[i]
+        return {"question": question, "answer": answer, "resources": resources, "qa_id": qa_id}
     
-    def split_data(self, chats, templates, merge_type):
+    def split_data(self, data):
         """
         Split the data into lists of input, output, the corresponding template and chat ids.
         """
-        in_list = []
-        out_list = []
-        template_list = []
-        chat_ids = []
+        question_list = []
+        answer_list = []
+        resources_list = []
+        qa_ids = []
 
-        for chat in chats:
-            in_list.append(chat["in"])
-            out_list.append(chat["out"])
-            chat_id = chat["id"]
-            chat_ids.append(chat_id)
-            span = chat["span"]
-            chat_templates = self.preprocess_templates(templates[chat_id], span, merge_type)
-            template_list.append(chat_templates)
+        for datapoint in data:
+            question_list.append(datapoint["question"])
+            answer_list.append(datapoint["answer"])
+            qa_ids.append(datapoint["qa_id"])
+            resources_list.append(datapoint["resources"])
 
-        return in_list, out_list, template_list, chat_ids
-    
-    def preprocess_templates(self, chat_templates, span, merge_type):
-        """
-        Create the templates based on the merge type.
-        - all: simply append all the sentences from each source.
-        - oracle: only append the sentences from the span's source.
-        - ms: mixed-short
-        """
-        
-        assert merge_type in ('all', 'oracle', 'ms')
-        
-        template_list = []
-        if merge_type == "all":
-            for source in chat_templates.keys():
-                template = chat_templates[source]
-                if len(template) > 0:
-                    template_list.extend(template)
+        return question_list, answer_list, resources_list, qa_ids
 
-        elif merge_type == "oracle":
-            for source in chat_templates.keys():
-                template = chat_templates[source]
-                for sentence in template:
-                    if all(elem in sentence for elem in span):
-                        template_list = (template)
-                        return template_list
-                    
-        elif merge_type == "ms":
-            # Get the length of the sources
-            num_words = {}
-            for source in chat_templates.keys():
-                num_words[source] = sum([len(x) for x in chat_templates[source]])
-            total_words = sum(num_words.keys())
-            
-            # Compute their proportions
-            ratios = num_words.copy()
-            for source in chat_templates.keys():
-                if chat_templates[source] > 0:
-                    ratios[source] /= total_words
-            
-            # TODO: juiste aantal woorden pakken van elke source
-
-        return template_list
-    
     def collate(self, batch):
         """
         Returns a single batch.
         """
-        inputs = []
-        outputs = []
-        templates = []
-        chat_ids = []
-        lengths = []
+        question_list = []
+        answer_list = []
+        resources_list = []
+        qa_ids = []
                 
         for item in batch:
-            inputs.append(item["in"])
-            outputs.append(item["out"])
-            templates.append(item["template"])
-            chat_ids.append(item["chat_id"])
-            lengths.append(len(item["in"]))
-        
-#        idx_desc = np.argsort(lengths)[::-1]
-#        sorted_inputs = [inputs[i] for i in idx_desc]
-#        sorted_outputs = [outputs[i] for i in idx_desc]
-#        sorted_templates = [templates[i] for i in idx_desc]
-#        sorted_chat_ids = [chat_ids[i] for i in idx_desc]
+            question_list.append(item["question"])
+            answer_list.append(item["answer"])
+            resources_list.append(item["resources"])
+            qa_ids.append(item["qa_id"])
 
-#        return sorted_inputs, sorted_outputs, sorted_templates, sorted_chat_ids
-        return inputs, outputs, templates, chat_ids
+        return question_list, answer_list, resources_list, qa_ids

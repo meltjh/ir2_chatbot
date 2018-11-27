@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from time import time
 from models import Model
-from read_data2 import get_datasets
+from read_data import get_datasets
 
 # Params
 NUM_EPOCHS = 10

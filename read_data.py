@@ -12,63 +12,64 @@ def read(filename, word2id, add_new_words):
     user_data: [{"id":chat_id, "in":sentence_in, "out":sentence_out}, ...]
     """
 
-    template_data = {}
-    user_data = []
+    all_data = []
+    all_words = []
+    all_data2id = []
 
     with open(filename) as file:
         json_data = json.load(file)
-        for line in json_data:
-            # Extracting
-            chat = line["chat"]
-            spans = line["spans"]
-            documents = line["documents"]
-            chat_id = line["chat_id"]
-            plot = documents["plot"]
-            review = documents["review"]
-            comments = documents["comments"]
-            facts = documents["fact_table"]
-            fact_boxoffice = facts["box_office"] if ("box_office" in facts and str(facts["box_office"]).lower() != "nan") else []
-            fact_awards = facts["awards"] if "awards" in facts else []
-            fact_taglines = facts["taglines"] if "taglines" in facts else []
-            fact_similar_movies = facts["similar_movies"] if "similar_movies" in facts else []
+        data = json_data["data"]
+        for line in data:
+            paragraph = line["paragraphs"][0] # list only consists of one paragraph
+            context = paragraph["context"]
+            qas = paragraph["qas"][0] # list only consists of one Q&A
+            question = qas["question"].lower()
+            answer_info = qas["answers"][0] # list only consists of one answer
+            answer = answer_info["text"].lower()
+            answer_start = answer_info["answer_start"]
+            qa_id = qas["id"]
+            
+            resources = [x.lstrip().rstrip().lower() for x in context.split(".") if len(x) > 0]
+            resources = [sentence + "." for sentence in resources]
+                        
+            all_words.extend(question.split())
+            all_words.extend(answer.split())
+            for sentence in resources:
+                all_words.extend(sentence.split())
+            
+            # if training, have to go through all the data first
+            if add_new_words:
+                all_data.append({"qa_id": qa_id, "question": question, "answer": answer, 
+                                 "answer_start": answer_start, "resources": resources})
+    
+            # if testing or validation, can already convert to ids
+            else:
+                question2id, answer2id, resources2id = word2id.datapoint2id(question, answer, resources)
+                all_data2id.append({"qa_id": qa_id, "question": question2id, "answer": answer2id, 
+                                    "answer_start": answer_start, "resources": resources2id})
+            
+    # if training, have to get the most common words first
+    if add_new_words:
+    # get the most common words and convert them to ids
+        counter = Counter(all_words)
+        most_common = counter.most_common(20)
+        word2id.most_common2id(most_common)
+        
+        # convert all the data to ids
+        for datapoint in all_data:
+            qa_id = datapoint["qa_id"]
+            question = datapoint["question"]
+            answer = datapoint["answer"]
+            resources = datapoint["resources"]
+            answer_start = datapoint["answer_start"]
+            
+            question2id, answer2id, resources2id = word2id.datapoint2id(question, answer, resources)
 
-            # Split the sentences into a list of sentences splitted by the .
-            plot = [x.lstrip().rstrip() for x in plot.split(".")]
-            review = [x.lstrip().rstrip() for x in review.split(".")]
+            all_data2id.append({"qa_id": qa_id, "question": question2id, 
+                                "answer": answer2id, "answer_start": answer_start, 
+                                "resources": resources2id})
 
-            # Formatting templates data            
-            templates = {}
-            templates["plot"] = resources_to_id(plot, word2id, add_new_words)
-            templates["review"] = resources_to_id(review, word2id, add_new_words)
-            templates["comments"] = resources_to_id(comments, word2id, add_new_words)
-            templates["fact_boxoffice"] = resources_to_id(fact_boxoffice, word2id, add_new_words)
-            templates["fact_awards"] = resources_to_id(fact_awards, word2id, add_new_words)
-            templates["fact_taglines"] = resources_to_id(fact_taglines, word2id, add_new_words)
-            templates["fact_similar_movies"] = resources_to_id(fact_similar_movies, word2id, add_new_words)
-            template_data[chat_id] = templates
-
-            # Loop to have pairs of q (even) and a (uneven).
-            # Some chats have uneven amount of messages where the last one is then removed (hence the -1),
-            # since it is supposed to be the human and thus no answer should be learned.
-            for i in range(0, len(chat)-1, 2):
-                # Obtain the ids and add them to the template.
-                sentence_in = word2id.string2id(chat[i])
-                sentence_out = word2id.string2id(chat[i+1])
-                span = word2id.string2id(spans[i+1]) # Only take span from response.
-                data = {"id":chat_id, "in":sentence_in, "out":sentence_out, "span": span}
-                user_data.append(data)
-
-    return template_data, user_data
-
-def resources_to_id(resource, word2id, add_new_words):
-    if not isinstance(resource, list):
-        resource = [resource]
-    sents2id = []
-    for sentence in resource:
-        sentence2id = word2id.string2id(sentence, add_new_words)
-        if len(sentence2id) > 0:
-            sents2id.append(sentence2id)
-    return sents2id
+    return all_data2id
 
 def print_counts(template_data, user_data):
     # TODO: nog goed maken.
@@ -108,26 +109,27 @@ def get_single_dataset(filename, word2id, batch_size, is_train, merge_type, prin
     """
     Returns a single dataset as dataloader object in batches.
     """
-    template_data, user_data = read(filename, word2id, is_train)
+    data = read(filename, word2id, is_train)
 
     # Print frequencies for data analysis.
-    if print_freqs:
-        print_counts(template_data, user_data)
+    # TODO: fix print_counts for new version
+#    if print_freqs:
+#        print_counts(template_data, user_data)
 
-    dataset = ChatsDataset(template_data, user_data, merge_type)
+    dataset = ChatsDataset(data)
     dataloader = DataLoader(dataset, batch_size, collate_fn=dataset.collate)
     return dataloader
 
-def get_datasets(path, batch_size, merge_type, print_freqs = False):
+def get_datasets(path, batch_size, print_freqs = False):
     """
     Returns all three datasets and the word2id object.
     """
     word2id = Word2Id()
-    train_data = get_single_dataset(path + "/train_data.json", word2id, batch_size, True, merge_type, print_freqs)
-    dev_data = get_single_dataset(path + "/dev_data.json", word2id, batch_size, False, merge_type, print_freqs)
-    test_data = get_single_dataset(path + "/test_data.json", word2id, batch_size, False, merge_type, print_freqs)
+    train_data = get_single_dataset(path + "train-v1.1.json", word2id, batch_size, True, print_freqs)
+    dev_data = get_single_dataset(path + "/dev-v1.1.json", word2id, batch_size, False, print_freqs)
+    test_data = get_single_dataset(path + "/test-v1.1.json", word2id, batch_size, False, print_freqs)
 
     return train_data, dev_data, test_data, word2id
 
 
-#train_data, dev_data, test_data, word2id = get_datasets("data/main_data", 5, "all", False)
+train_data, dev_data, test_data, word2id = get_datasets("data/experiment_data/bidaf/oracle_short/", 5, False)
