@@ -4,6 +4,7 @@ from ChatsDataset import ChatsDataset
 from torch.utils.data import Dataset, DataLoader
 from word2id import Word2Id
 import matplotlib.pyplot as plt
+from embeddings import get_embedding_vectors
 
 def read(filename, word2id, add_new_words):
     """
@@ -50,11 +51,11 @@ def read(filename, word2id, add_new_words):
             
     # if training, have to get the most common words first
     if add_new_words:
-    # get the most common words and convert them to ids
+    # get the most common words that occur in the GLoVE set and convert them to ids
+        glove_embeddings, _ = get_embedding_vectors(300)
         counter = Counter(all_words)
-        most_common = counter.most_common(20000)
-        word2id.most_common2id(most_common)
-        
+        most_common = counter.most_common()
+        word2id.most_common2id(most_common, glove_embeddings, 20)
         # convert all the data to ids
         for datapoint in all_data:
             qa_id = datapoint["qa_id"]
@@ -124,6 +125,7 @@ def get_datasets(path, batch_size, print_freqs = False):
     """
     Returns all three datasets and the word2id object.
     """
+    print("Getting the datasets\n")
     word2id = Word2Id()
     train_data = get_single_dataset(path + "train-v1.1.json", word2id, batch_size, True, print_freqs)
     dev_data = get_single_dataset(path + "/dev-v1.1.json", word2id, batch_size, False, print_freqs)

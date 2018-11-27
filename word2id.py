@@ -28,7 +28,7 @@ class Word2Id:
 
   def most_common2id(self, most_common, glove_embeddings, top_n):
       """
-      Add the most_common words to Word2Id.
+      Add the most_common words that occurs in the GLoVE set to Word2Id.
       Input: the list of tuples with the most common words and their frequencies.
       """
       i = 0
@@ -38,10 +38,14 @@ class Word2Id:
                   self._process_single_string(word, True)
                   i += 1
           else:
-              print("The top {} words are added".format(i))
               break
           
   def datapoint2id(self, question, answer, resources):
+      """
+      Convert the question, answer and resources to their ids.
+      Input: question and answer as strings and resources as list of strings.
+      Output: question and answer as list of ids and resources as list of lists of ids.
+      """
       question2id = self.string2id(question)
       answer2id = self.string2id(answer)
       resources2id = []
@@ -112,4 +116,4 @@ class Word2Id:
     
     # Remove the last space.
     string = string[:-1]
-    return strings
+    return string
