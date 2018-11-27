@@ -53,7 +53,7 @@ def read(filename, word2id, add_new_words, glove_vocab = None):
     
     end = time.time()
     print("-- Finished reading the file")
-    print("It took {}s\n".format(end-start))
+    print("It took {:.2f} seconds\n".format(end-start))
     start = time.time()
     # if training, have to get the most common words first
     if add_new_words:
@@ -79,7 +79,7 @@ def read(filename, word2id, add_new_words, glove_vocab = None):
                                 "resources": resources2id})
         end = time.time()
         print("Finished adding words to the word2id")
-        print("It took {}s\n".format(end-start))
+        print("It took {:.2f} seconds\n".format(end-start))
 
     return all_data2id
 
