@@ -55,7 +55,7 @@ for epoch in range(NUM_EPOCHS):
 
 
     # Progress
-    print('\rEpoch {:03d}/{:03d} Example {:05d}/{:05d} ({:02d}:{:02d}/{:02d}:{:02d}) | Bilinear loss: {:.2f}, Decoder loss: {:.2f}'.format(
+    print('\rEpoch {:03d}/{:03d} Example {:05d}/{:05d} ({:02d}:{:02d}/{:02d}:{:02d}) | Bilinear loss: {:.4f}, Decoder loss: {:.4f}'.format(
       epoch+1,
       NUM_EPOCHS,
       (batch_num+1)*BATCH_SIZE,
