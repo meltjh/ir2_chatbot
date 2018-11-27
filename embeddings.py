@@ -8,8 +8,7 @@ def get_embedding_vectors(embedding_dim):
             line = l.decode().split()
             word = line[0]
             embedding_vectors[word] = np.array(line[1:]).astype(np.float)
-    glove_vocab = embeddings_vectors.keys()
-    print(glove_vocab)
+    glove_vocab = list(embedding_vectors.keys())
     return glove_vocab, embedding_vectors
 
 def get_weight_matrix(embedding_vectors, word2id, vocab_size, embedding_dim):
