@@ -11,7 +11,7 @@ class ChatsDataset(Dataset):
         self.qa_ids = qa_ids
 
     def __len__(self):
-        return len(self.in_list)
+        return len(self.question_list)
 
     def __getitem__(self, i):
         """

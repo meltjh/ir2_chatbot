@@ -2,20 +2,20 @@ import torch
 import torch.nn as nn
 from time import time
 from models import Model
-from read_data import get_datasets
+from read_data2 import get_datasets
 
 # Params
 NUM_EPOCHS = 10
-BATCH_SIZE = 3#5
-HIDDEN_DIM = 25#7#250
-EMBEDDING_DIM = 25#11#250
-MERGE_TYPE = "all"
+BATCH_SIZE = 10#3#5
+HIDDEN_DIM = 250#7#250
+EMBEDDING_DIM = 250#11#250
+MERGE_TYPE = "oracle"
 
 print("Merge type: {}, epochs: {}, batch size: {}, hidden dim: {}, embedding dim: {}.".format(MERGE_TYPE, NUM_EPOCHS, BATCH_SIZE, HIDDEN_DIM, EMBEDDING_DIM))
 
 # Init
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-train_data, _, _, word2id = get_datasets("data/main_data", BATCH_SIZE, MERGE_TYPE)
+train_data, _, _, word2id = get_datasets("data/experiment_data/bidaf/oracle_short/", BATCH_SIZE, False)
 vocab_size = len(word2id.id2w)
 
 # Model
