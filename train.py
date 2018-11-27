@@ -6,9 +6,9 @@ from read_data2 import get_datasets
 
 # Params
 NUM_EPOCHS = 10
-BATCH_SIZE = 10#3#5
-HIDDEN_DIM = 250#7#250
-EMBEDDING_DIM = 250#11#250
+BATCH_SIZE = 3#5
+HIDDEN_DIM = 7#250
+EMBEDDING_DIM = 11#250
 MERGE_TYPE = "oracle"
 
 print("Merge type: {}, epochs: {}, batch size: {}, hidden dim: {}, embedding dim: {}.".format(MERGE_TYPE, NUM_EPOCHS, BATCH_SIZE, HIDDEN_DIM, EMBEDDING_DIM))

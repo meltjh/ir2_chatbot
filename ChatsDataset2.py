@@ -52,7 +52,7 @@ class ChatsDataset(Dataset):
         for item in batch:
             question_list.append(item["question"])
             answer_list.append(item["answer"])
-            resources_list.append(item["resource"])
+            resources_list.append(item["resources"])
             qa_ids.append(item["qa_id"])
 
         return question_list, answer_list, resources_list, qa_ids
