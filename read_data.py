@@ -55,7 +55,7 @@ def read(filename, word2id, add_new_words):
         glove_embeddings, _ = get_embedding_vectors(300)
         counter = Counter(all_words)
         most_common = counter.most_common()
-        word2id.most_common2id(most_common, glove_embeddings, 20)
+        word2id.most_common2id(most_common, glove_embeddings, 20000)
         # convert all the data to ids
         for datapoint in all_data:
             qa_id = datapoint["qa_id"]
