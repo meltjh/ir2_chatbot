@@ -1,8 +1,10 @@
 import torch
 import numpy as np
 
-def get_embedding_vectors(embedding_dim):
+def get_glove_embeddings(embedding_dim):
+    print("Getting glove vocab")
     embedding_vectors = {}
+    vocab = []
     with open('glove.6B/glove.6B.{}d.txt'.format(embedding_dim), 'rb') as f:
         for l in f:
             line = l.decode().split()
@@ -11,11 +13,15 @@ def get_embedding_vectors(embedding_dim):
     glove_vocab = list(embedding_vectors.keys())
     return glove_vocab, embedding_vectors
 
-def get_weight_matrix(embedding_vectors, word2id, vocab_size, embedding_dim):
-    weights_matrix = np.zeros((matrix_len, embedding_dim))
+def get_embeddings_matrix(embedding_vectors, word2id, vocab_size, embedding_dim):
+    print("Constructing embeddings matrix")
+    embeddings_matrix = np.zeros((vocab_size, embedding_dim))
     for word, id in word2id.w2id.items():
-        weights_matrix[id] = embedding_vectors[word]
-    return weights_matrix
+        try:
+            embeddings_matrix[id] = embedding_vectors[word]
+        except KeyError:
+            embeddings_matrix[id] = np.random.normal(size=(embedding_dim, ))
+    return embeddings_matrix
 
     # matrix_len = len(word2id.id2w)
     #

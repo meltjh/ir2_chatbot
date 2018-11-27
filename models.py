@@ -91,12 +91,21 @@ class Bilinear(nn.Module):
 
 
 class Model(nn.Module):
-  def __init__(self, word2id, hidden_size, embedding_size):
+  def __init__(self, word2id, hidden_size, embedding_size, embeddings_matrix):
     super().__init__()
     self.word2id = word2id
     self.vocab_size = len(self.word2id.id2w)
 
     self.embeddings = nn.Embedding(self.vocab_size, embedding_size)
+    print(type(self.embeddings.weight.data))
+    print(self.embeddings.weight.data)
+    print(self.embeddings.weight.data.size())
+    self.embeddings.weight.data.copy_(torch.from_numpy(embeddings_matrix))
+    print(type(self.embeddings.weight.data))
+    print(self.embeddings.weight.data)
+    print(self.embeddings.weight.data.size())
+    # self.embeddings.weight.requires_grad = False
+
     self.encoder = Encoder(self.embeddings, hidden_size)
     self.bilinear = Bilinear(hidden_size)
     self.decoder = Decoder(self.embeddings, hidden_size)
