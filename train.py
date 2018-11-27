@@ -7,9 +7,9 @@ from embeddings import get_glove_embeddings, get_embeddings_matrix
 
 # Params
 NUM_EPOCHS = 10
-BATCH_SIZE = 3#5
-HIDDEN_DIM = 5#250
-EMBEDDING_DIM = 50#250
+BATCH_SIZE = 10#5
+HIDDEN_DIM = 250#250
+EMBEDDING_DIM = 100#250
 MERGE_TYPE = "oracle"
 
 print("Merge type: {}, epochs: {}, batch size: {}, hidden dim: {}, embedding dim: {}.".format(MERGE_TYPE, NUM_EPOCHS, BATCH_SIZE, HIDDEN_DIM, EMBEDDING_DIM))
@@ -53,9 +53,6 @@ for epoch in range(NUM_EPOCHS):
     (bilinear_loss + decoder_loss).backward()
     opt.step()
 
-    # response, _ = model.respond(device, word2id, input[:1], templates[:1], max_length=20)
-    # print('\nInput: \t\t {}'.format(' '.join([word2id.id2w[x] for x in input[0]])))
-    # print('Response: \t {}'.format(' '.join([word2id.id2w[x] for x in response])))
 
     # Progress
     print('\rEpoch {:03d}/{:03d} Example {:05d}/{:05d} ({:02d}:{:02d}/{:02d}:{:02d}) | Bilinear loss: {:.2f}, Decoder loss: {:.2f}'.format(
@@ -70,3 +67,7 @@ for epoch in range(NUM_EPOCHS):
       bilinear_loss.item(),
       decoder_loss.item()
     ), end='')
+    
+  response, _ = model.respond(device, word2id, input[:1], templates[:1], max_length=20)
+  print('\nInput: \t\t {}'.format(' '.join([word2id.id2w[x] for x in input[0]])))
+  print('Response: \t {}'.format(' '.join([word2id.id2w[x] for x in response])))
