@@ -52,7 +52,7 @@ def read(filename, word2id, add_new_words):
     if add_new_words:
     # get the most common words and convert them to ids
         counter = Counter(all_words)
-        most_common = counter.most_common(20)
+        most_common = counter.most_common(20000)
         word2id.most_common2id(most_common)
         
         # convert all the data to ids
