@@ -45,7 +45,9 @@ class Encoder(nn.Module):
 
   def create_bilinear_tensors(self, encodings, unstack_mapping, templates):
     # Repeat the indices of the input for the number of templates it has
-    input_indices = [[i]*len(templates[i]) for i in range(len(templates))]
+    input_indices = []
+    for i in range(len(templates)):
+      input_indices += [i]*len(templates[i])
     template_indices = [item for sublist in unstack_mapping for item in sublist]
 
     # Index from encodings
