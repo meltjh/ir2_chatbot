@@ -35,11 +35,13 @@ for epoch in range(NUM_EPOCHS):
   start_time = time()
   for batch_num, batch in enumerate(train_data):
     # Get batch
-    input, target, templates, _ = tuple(batch)
+    input, target, templates, _, true_saliencies = tuple(batch)
 
     input = [torch.tensor(i).long().to(device) for i in input]
     target = [torch.tensor(i).long().to(device) for i in target]
     templates = list(map(lambda l: [torch.tensor(i).long().to(device) for i in l], templates))
+    true_saliencies = [torch.tensor(i).float().to(device).unsqueeze(1) for i in true_saliencies]
+
 
     # Training step
     opt.zero_grad()
@@ -57,7 +59,7 @@ for epoch in range(NUM_EPOCHS):
     print('Response: \t {}'.format(' '.join([word2id.id2w[x] for x in response])))
 
     # Progress
-    print('\rEpoch {:03d}/{:03d} Example {:05d}/{:05d} ({:02d}:{:02d}/{:02d}:{:02d}) | Bilinear loss: {:.2f}, Decoder loss: {:.2f}'.format(
+    print('\rEpoch {:03d}/{:03d} Example {:05d}/{:05d} ({:02d}:{:02d}/{:02d}:{:02d}) | Bilinear loss: {:.4f}, Decoder loss: {:.4f}'.format(
       epoch+1,
       NUM_EPOCHS,
       (batch_num+1)*BATCH_SIZE,

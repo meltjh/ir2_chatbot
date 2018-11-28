@@ -55,7 +55,7 @@ class Word2Id:
               break
       end = time.time()
       print("-- Finished getting the top {} words".format(top_n))
-      print("It took {}s\n".format(end-start))
+      print("It took {:.2f} seconds\n".format(end-start))
           
   def datapoint2id(self, question, answer, resources):
       """
