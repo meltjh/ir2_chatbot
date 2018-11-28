@@ -7,12 +7,13 @@ from torch import Tensor
 from torch.optim import Optimizer
 from time import time
 
-def print_progress(P, epoch: int, batch_num: int, num_batches: int, saliency_loss: Tensor, decoder_loss: Tensor, start_time: float) -> None:
+def print_progress(prefix: str, P, epoch: int, batch_num: int, num_batches: int, saliency_loss: Tensor, decoder_loss: Tensor, start_time: float) -> None:
   elapsed_time = time() - start_time
   average_rate = elapsed_time / (batch_num + 1)
   remaining_time = average_rate * (num_batches - batch_num)
 
-  print('\rEpoch {:03d}/{:03d} Example {:05d}/{:05d} ({:02d}:{:02d}/{:02d}:{:02d}) | Bilinear loss: {:.4f}, Decoder loss: {:.4f}'.format(
+  print('\r{}Epoch {:03d}/{:03d} Example {:05d}/{:05d} ({:02d}:{:02d}/{:02d}:{:02d}) | Bilinear loss: {:.4f}, Decoder loss: {:.4f}'.format(
+    prefix,
     epoch+1,
     P.NUM_EPOCHS,
     (batch_num+1)*P.BATCH_SIZE,
@@ -21,8 +22,8 @@ def print_progress(P, epoch: int, batch_num: int, num_batches: int, saliency_los
     int(elapsed_time % 60),
     int(remaining_time // 60),
     int(remaining_time % 60),
-    saliency_loss.item(),
-    decoder_loss.item()
+    saliency_loss,
+    decoder_loss
   ), end='')
 
 def unpack_batch(batch: list, device: torch.device) -> tuple:
