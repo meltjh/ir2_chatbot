@@ -3,48 +3,66 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from torch.nn.utils.rnn import pack_sequence, pad_packed_sequence
-
-def sort_inputs(input):
-  order = list(reversed(sorted(range(len(input)), key=lambda i: len(input[i]))))
-  sorted_input = np.array(input)[order]
-
-  # Determine reverse index to restore original order
-  mapping = torch.empty(len(order)).long()
-  for i, j in enumerate(order):
-    mapping[j] = i
-
-  return sorted_input, mapping, order
+from utils import sort_by_length
 
 class Encoder(nn.Module):
-  def __init__(self, embeddings, hidden_size):
+  def __init__(self, embeddings: nn.Embedding, hidden_size: int):
     super().__init__()
 
     self.hidden_size = hidden_size
     self.embeddings = embeddings
+
     self.lstm = nn.LSTM(self.embeddings.embedding_dim, self.hidden_size, num_layers=2, bidirectional=True)
 
-  def forward(self, input, templates):
-    num_inputs = len(input)
+  def forward(self, input: list, templates: list):
+    # Stack all inputs and templates into one list to process them as batch
+    stacked_input, unstack_mapping = self.stack_inputs(input, templates)
 
-    # Pre-model
-    stacked_input, stack_mapping = self.stack_inputs(input, templates)
+    # Embed the input and template words
     embedded_input = [self.embeddings(x) for x in stacked_input]
-    sorted_input, sort_mapping, _ = sort_inputs(embedded_input)
+
+    # Sort the stacked inputs and templates by length, allowing them to be packed
+    sorted_input, unsort_mapping, _ = sort_by_length(embedded_input)
+
+    # Pack the inputs to allow the variable length sequences to be processed as a batch
     packed_input = pack_sequence(sorted_input)
 
-    # Model-model
+    # Encode the inputs and templates with the LSTM
     _, (lstm_hidden, _) = self.lstm(packed_input)
 
-    # Post-model
-    bilinear_inputs, bilinear_templates = self.unpack_bilinear(lstm_hidden, stack_mapping, sort_mapping, num_inputs, templates)
+    # Reshape the output to (num_layers, num_directions, batch_size, hidden_size) and take
+    # and concat the final state in each direction of layer 2
+    lstm_hidden = lstm_hidden.view(2, 2, -1, self.hidden_size)
+    sorted_encodings = lstm_hidden[1].view(-1, self.hidden_size * 2)
 
-    return bilinear_inputs, bilinear_templates, stack_mapping
+    # Unsort the output to its original stacked order
+    encodings = sorted_encodings[unsort_mapping]
+
+    # Match the input and template encodings into two tensors for the bilinear module
+    input_encodings, template_encodings = self.create_bilinear_tensors(encodings, unstack_mapping, templates)
+
+    return input_encodings, template_encodings, unstack_mapping
+
+  def create_bilinear_tensors(self, encodings, unstack_mapping, templates):
+    # Repeat the indices of the input for the number of templates it has
+    input_indices = []
+    for i in range(len(templates)):
+      input_indices += [i]*len(templates[i])
+    template_indices = [item for sublist in unstack_mapping for item in sublist]
+
+    # Index from encodings
+    input_encodings = encodings[input_indices]
+    template_encodings = encodings[template_indices]
+
+    return input_encodings, template_encodings
 
   @staticmethod
   def stack_inputs(input, templates):
-    stacked = input
+    # Place input at top of list
+    stacked = [] + input
     mapping = []
 
+    # Place templates for input below
     index = len(stacked)
     for batch_templates in templates:
       stacked += batch_templates
@@ -53,17 +71,6 @@ class Encoder(nn.Module):
       index += len(batch_templates)
 
     return stacked, mapping
-
-  def unpack_bilinear(self, lstm_hidden, mapping1, mapping2, num_inputs, templates):
-    hidden_bilinear = lstm_hidden.view(2, 2, -1, self.hidden_size)[1].view(-1, self.hidden_size*2)[mapping2] # For bilinear
-    input_indices = []
-    for i in range(num_inputs):
-      input_indices += [i]*len(templates[i])
-    template_indices = [item for sublist in mapping1 for item in sublist]
-    hidden_bilinear_input = hidden_bilinear[input_indices]
-    hidden_bilinear_templates = hidden_bilinear[template_indices]
-
-    return hidden_bilinear_input, hidden_bilinear_templates
 
 class Bilinear(nn.Module):
   def __init__(self, hidden_size):
@@ -117,6 +124,7 @@ class Model(nn.Module):
 
     return self.decoder.generate(word2id, template_state, max_length, device)
 
+
 class Decoder(nn.Module):
   def __init__(self, embeddings, hidden_size):
     super().__init__()
@@ -128,7 +136,7 @@ class Decoder(nn.Module):
 
   def forward(self, target, template_state):
     embedded_targets = [self.embeddings(x[:-1]) for x in target]
-    sorted_targets, sort_map_backward, sort_map_forward = sort_inputs(embedded_targets)
+    sorted_targets, sort_map_backward, sort_map_forward = sort_by_length(embedded_targets)
     sorted_template_states = template_state[sort_map_forward]
     packed_targets = pack_sequence(sorted_targets)
     gru_output, _ = self.gru(packed_targets, sorted_template_states.unsqueeze(0))

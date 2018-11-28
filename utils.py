@@ -1,8 +1,9 @@
 import os
 import torch
+import rougescore
+import numpy as np
 from torch import Tensor
 from torch.optim import Optimizer
-import rougescore
 from time import time
 from models import Model
 
@@ -69,11 +70,22 @@ def get_saliency(target, templates):
   Returns the saliency which is rouge-1(tar,temp) + rouge-2(tar,temp) for each in batch.
   Note that the begin and end tokens are present as well.C
   """
-  
+
   r_scores = []
   for template in templates:
     r1 = rougescore.rouge_n(target, [template], 1, 0.5)
     r2 = rougescore.rouge_n(target, [template], 2, 0.5)
     r_scores.append(r1+r2)
-    
+
   return r_scores
+
+def sort_by_length(input: list) -> tuple:
+  forward = list(reversed(sorted(range(len(input)), key=lambda i: len(input[i]))))
+  sorted_input = np.array(input)[forward]
+
+  # Determine reverse index to restore original order
+  backward = torch.empty(len(forward)).long()
+  for i, j in enumerate(forward):
+    backward[j] = i
+
+  return sorted_input, backward, forward
