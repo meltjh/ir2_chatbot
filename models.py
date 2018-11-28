@@ -127,11 +127,11 @@ class Decoder(nn.Module):
     self.softmax = nn.LogSoftmax(-1)
 
   def forward(self, target, template_state):
-    embedded_targets = [self.embeddings(x) for x in target]
-    sorted_targets, sort_map_backward, sort_map_forward  = sort_inputs(embedded_targets)
+    embedded_targets = [self.embeddings(x[:-1]) for x in target]
+    sorted_targets, sort_map_backward, sort_map_forward = sort_inputs(embedded_targets)
     sorted_template_states = template_state[sort_map_forward]
     packed_targets = pack_sequence(sorted_targets)
-    gru_output, _ = self.gru(packed_targets, template_state.unsqueeze(0))
+    gru_output, _ = self.gru(packed_targets, sorted_template_states.unsqueeze(0))
     unpacked_gru_output, sequence_lengths = self.unpack_gru_output(gru_output)
     softmax_output = self.softmax(self.out(unpacked_gru_output))
     split_output = self.split_softmax_output(softmax_output, sequence_lengths)

@@ -7,7 +7,7 @@ from embeddings import get_glove_embeddings, get_embeddings_matrix
 
 # Params
 NUM_EPOCHS = 10
-BATCH_SIZE = 3#5
+BATCH_SIZE = 5#5
 HIDDEN_DIM = 50#250
 EMBEDDING_DIM = 300#250
 MERGE_TYPE = "oracle"
@@ -45,15 +45,16 @@ for epoch in range(NUM_EPOCHS):
     opt.zero_grad()
     saliency, response = model(input, target, templates)
 
-    decoder_loss = torch.stack([decoder_loss_fn(res, tar) for res, tar in zip(response, target)]).mean()
+    decoder_target = [t[1:] for t in target]  # Cut <BOS> from target
+    decoder_loss = torch.stack([decoder_loss_fn(res, tar) for res, tar in zip(response, decoder_target)]).mean()
     bilinear_loss = torch.stack([bilinear_loss_fn(sal, torch.randn_like(sal).float()) for sal in saliency]).mean()
 
     (bilinear_loss + decoder_loss).backward()
     opt.step()
 
-    # response, _ = model.respond(device, word2id, input[:1], templates[:1], max_length=20)
-    # print('\nInput: \t\t {}'.format(' '.join([word2id.id2w[x] for x in input[0]])))
-    # print('Response: \t {}'.format(' '.join([word2id.id2w[x] for x in response])))
+    response, _ = model.respond(device, word2id, input[:1], templates[:1], max_length=20)
+    print('\nInput: \t\t {}'.format(' '.join([word2id.id2w[x] for x in input[0]])))
+    print('Response: \t {}'.format(' '.join([word2id.id2w[x] for x in response])))
 
     # Progress
     print('\rEpoch {:03d}/{:03d} Example {:05d}/{:05d} ({:02d}:{:02d}/{:02d}:{:02d}) | Bilinear loss: {:.2f}, Decoder loss: {:.2f}'.format(
@@ -68,3 +69,8 @@ for epoch in range(NUM_EPOCHS):
       bilinear_loss.item(),
       decoder_loss.item()
     ), end='')
+
+# %%
+# import importlib, models
+# importlib.reload(models)
+# from models import Model
