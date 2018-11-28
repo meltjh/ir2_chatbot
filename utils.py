@@ -2,10 +2,10 @@ import os
 import torch
 import rougescore
 import numpy as np
+import torch.nn as nn
 from torch import Tensor
 from torch.optim import Optimizer
 from time import time
-from models import Model
 
 def print_progress(P, epoch: int, batch_num: int, num_batches: int, saliency_loss: Tensor, decoder_loss: Tensor, start_time: float) -> None:
   elapsed_time = time() - start_time
@@ -36,7 +36,7 @@ def unpack_batch(batch: list, device: torch.device) -> tuple:
   return input, target, templates, saliencies
 
 
-def save_checkpoint(P, epoch: int, model: Model, optimiser: Optimizer) -> None:
+def save_checkpoint(P, epoch: int, model: nn.Module, optimiser: Optimizer) -> None:
   if not os.path.exists(P.SAVE_DIR):
     os.mkdir(P.SAVE_DIR)
 
@@ -48,7 +48,7 @@ def save_checkpoint(P, epoch: int, model: Model, optimiser: Optimizer) -> None:
 
   torch.save(state, '{}/checkpoint-{}.pt'.format(P.SAVE_DIR, epoch+1))
 
-def load_checkpoint(P, model: Model, optimiser: Optimizer) -> int:
+def load_checkpoint(P, model: nn.Module, optimiser: Optimizer) -> int:
   epoch = 0
   if os.path.exists(P.SAVE_DIR):
     checkpoints = [os.path.join(P.SAVE_DIR, f) for f in os.listdir(P.SAVE_DIR) if f.endswith('.pt')]
