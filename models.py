@@ -39,14 +39,16 @@ class Encoder(nn.Module):
     encodings = sorted_encodings[unsort_mapping]
 
     # Match the input and template encodings into two tensors for the bilinear module
-    input_encodings, template_encodings = self.create_bilinear_tensors(encodings, unstack_mapping, templates)
+    input_encodings, template_encodings, bilinear_mapping = self.create_bilinear_tensors(encodings, unstack_mapping, templates)
 
-    return input_encodings, template_encodings, unstack_mapping
+    return input_encodings, template_encodings, bilinear_mapping
 
   def create_bilinear_tensors(self, encodings, unstack_mapping, templates):
+    batch_size = len(templates)
+
     # Repeat the indices of the input for the number of templates it has
     input_indices = []
-    for i in range(len(templates)):
+    for i in range(batch_size):
       input_indices += [i]*len(templates[i])
     template_indices = [item for sublist in unstack_mapping for item in sublist]
 
@@ -54,7 +56,10 @@ class Encoder(nn.Module):
     input_encodings = encodings[input_indices]
     template_encodings = encodings[template_indices]
 
-    return input_encodings, template_encodings
+    # Create new index for bilinear mapping
+    bilinear_mapping = [[i-batch_size for i in batch_ids] for batch_ids in unstack_mapping]
+
+    return input_encodings, template_encodings, bilinear_mapping
 
   @staticmethod
   def stack_inputs(input, templates):
@@ -79,24 +84,23 @@ class Bilinear(nn.Module):
     self.bifc = nn.Bilinear(2*hidden_size, 2*hidden_size, 1)
     self.sigmoid = nn.Sigmoid()
 
-  def forward(self, x_input, x_templates, mapping1):
-    batch_size = len(mapping1)
-    saliency = self.sigmoid(self.bifc(x_input, x_templates))
+  def forward(self, input_encodings, template_encodings, bilinear_mapping):
+    # Run encodings through bilinear layer to obtain predicted saliency between input and templates
+    saliency = self.sigmoid(self.bifc(input_encodings, template_encodings))
 
-    bilinear_mapping = [[i-batch_size for i in batch_ids] for batch_ids in mapping1] # Correct because inputs are not at top for bilinear
-    batched_weights = [F.softmax(saliency[indices], 0) for indices in bilinear_mapping]
+    # The unstack mapping is for the tensor with the inputs at the top. In this module the encodings have been
+    batched_weights = [F.softmax(saliency[indices], -1) for indices in bilinear_mapping]
     batched_saliency = [saliency[indices] for indices in bilinear_mapping]
 
     output_states = []
     for template_ids, weights in zip(bilinear_mapping, batched_weights):
-      input_state = x_input[template_ids[0]]
-      template_state = (x_templates[template_ids] * weights).sum(0)
+      input_state = input_encodings[template_ids[0]]
+      template_state = (template_encodings[template_ids] * weights).sum(0)
       output_states.append(torch.cat((input_state, template_state)))
 
     output_states = torch.stack(output_states)
 
     return output_states, batched_saliency
-
 
 class Model(nn.Module):
   def __init__(self, word2id, hidden_size, embedding_size, embeddings_matrix):
@@ -112,8 +116,8 @@ class Model(nn.Module):
     self.decoder = Decoder(self.embeddings, hidden_size)
 
   def forward(self, input, target, templates):
-    bilinear_inputs, bilinear_templates, stack_mapping = self.encoder(input, templates)
-    template_state, saliency = self.bilinear(bilinear_inputs, bilinear_templates, stack_mapping)
+    input_encodings, template_encodings, bilinear_mapping = self.encoder(input, templates)
+    template_state, saliency = self.bilinear(input_encodings, template_encodings, bilinear_mapping)
     response = self.decoder(target, template_state)
 
     return saliency, response
