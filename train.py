@@ -11,8 +11,8 @@ from embeddings import get_glove_embeddings, get_embeddings_matrix
 # Params
 class P:
   NUM_EPOCHS = 10
-  BATCH_SIZE = 3
-  HIDDEN_DIM = 15
+  BATCH_SIZE = 10
+  HIDDEN_DIM = 150
   EMBEDDING_DIM = 50
   MERGE_TYPE = "oracle"
   SAVE_DIR = 'checkpoints'
@@ -61,11 +61,11 @@ def evaluate(data, model, word2id, decoder_loss_fn, saliency_loss_fn, device):
 print("Merge type: {}, epochs: {}, batch size: {}, hidden dim: {}, embedding dim: {}.".format(P.MERGE_TYPE, P.NUM_EPOCHS, P.BATCH_SIZE, P.HIDDEN_DIM, P.EMBEDDING_DIM))
 
 # Init
-#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-#glove_vocab, glove_embeddings = get_glove_embeddings(P.EMBEDDING_DIM)
-#train_data, val_data, _, word2id = get_datasets("data/experiment_data/bidaf/oracle_short/", P.BATCH_SIZE, glove_vocab, False)
-#vocab_size = len(word2id.id2w)
-#embeddings_matrix = get_embeddings_matrix(glove_embeddings, word2id, vocab_size, P.EMBEDDING_DIM)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+glove_vocab, glove_embeddings = get_glove_embeddings(P.EMBEDDING_DIM)
+train_data, val_data, _, word2id = get_datasets("data/experiment_data/bidaf/oracle_short/", P.BATCH_SIZE, glove_vocab, False)
+vocab_size = len(word2id.id2w)
+embeddings_matrix = get_embeddings_matrix(glove_embeddings, word2id, vocab_size, P.EMBEDDING_DIM)
 
 # %% Model
 model = Model(word2id, P.HIDDEN_DIM, P.EMBEDDING_DIM, embeddings_matrix).to(device)
