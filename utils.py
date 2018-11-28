@@ -89,3 +89,8 @@ def sort_by_length(input: list) -> tuple:
     backward[j] = i
 
   return sorted_input, backward, forward
+
+def save_sentence_to_file(sentence, filename, split_token='\n'):
+  with open(filename, 'a+') as f:
+    f.write(sentence)
+    f.write(split_token)
