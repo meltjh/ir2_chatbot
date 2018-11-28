@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
-import rougescore
+from utils import get_saliency
 
 class ChatsDataset(Dataset):
 
@@ -25,22 +25,6 @@ class ChatsDataset(Dataset):
         qa_id = self.qa_ids[i]
         true_saliencies = self.true_saliencies_list[i]
         return {"question": question, "answer": answer, "resources": resources, "qa_id": qa_id, "true_saliencies": true_saliencies}
-    
-    @staticmethod
-    def get_saliency(target, templates):
-      """
-      Input: The targets is a list of word-id's and templates a list of list of word-id's
-      Returns the saliency which is rouge-1(tar,temp) + rouge-2(tar,temp) for each in batch.
-      Note that the begin and end tokens are present as well.
-      """
-      
-      r_scores = []
-      for template in templates:
-        r1 = rougescore.rouge_n(target, [template], 1, 0.5)
-        r2 = rougescore.rouge_n(target, [template], 2, 0.5)
-        r_scores.append(r1+r2)
-        
-      return r_scores
         
     def split_data(self, data):
         """
@@ -57,7 +41,7 @@ class ChatsDataset(Dataset):
             answer_list.append(datapoint["answer"])
             qa_ids.append(datapoint["qa_id"])
             resources_list.append(datapoint["resources"])
-            true_saliencies_list.append(self.get_saliency(datapoint["answer"], datapoint["resources"]))
+            true_saliencies_list.append(get_saliency(datapoint["answer"], datapoint["resources"]))
 
         return question_list, answer_list, resources_list, qa_ids, true_saliencies_list
 

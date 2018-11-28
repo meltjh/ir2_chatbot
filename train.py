@@ -14,7 +14,6 @@ class P:
   HIDDEN_DIM = 50
   EMBEDDING_DIM = 300
   MERGE_TYPE = "oracle"
-  SAVE_INTERVAL = 10000
   SAVE_DIR = 'checkpoints'
 
 

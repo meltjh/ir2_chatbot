@@ -2,7 +2,7 @@ import os
 import torch
 from torch import Tensor
 from torch.optim import Optimizer
-
+import rougescore
 from time import time
 from models import Model
 
@@ -61,3 +61,18 @@ def load_checkpoint(P, model: Model, optimiser: Optimizer) -> int:
       epoch = state['epoch']
 
   return epoch
+
+def get_saliency(target, templates):
+  """
+  Input: The targets is a list of word-id's and templates a list of list of word-id's
+  Returns the saliency which is rouge-1(tar,temp) + rouge-2(tar,temp) for each in batch.
+  Note that the begin and end tokens are present as well.C
+  """
+  
+  r_scores = []
+  for template in templates:
+    r1 = rougescore.rouge_n(target, [template], 1, 0.5)
+    r2 = rougescore.rouge_n(target, [template], 2, 0.5)
+    r_scores.append(r1+r2)
+    
+  return r_scores
