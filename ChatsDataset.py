@@ -31,6 +31,7 @@ class ChatsDataset(Dataset):
       """
       Input: The targets is a list of word-id's and templates a list of list of word-id's
       Returns the saliency which is rouge-1(tar,temp) + rouge-2(tar,temp) for each in batch.
+      Note that the begin and end tokens are present as well.
       """
       
       r_scores = []
