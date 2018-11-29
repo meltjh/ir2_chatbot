@@ -8,28 +8,12 @@ import time
 import nltk
 import re
 
-def process_tokens(temp_tokens):
-    tokens = []
-    for token in temp_tokens:
-        flag = False
-        l = ("-", "\u2212", "\u2014", "\u2013", "/", "~", '"', "'", "\u201C", "\u2019", "\u201D", "\u2018", "\u00B0")
-        # \u2013 is en-dash. Used for number to nubmer
-        # l = ("-", "\u2212", "\u2014", "\u2013")
-        # l = ("\u2013",)
-        tokens.extend(re.split("([{}])".format("".join(l)), token))
-    return tokens
-
-def word_tokenize(tokens):
-    return [token.replace("''", '"').replace("``", '"') for token in nltk.word_tokenize(tokens)]
-
 def read(filename, word2id, add_new_words, glove_vocab = None):
     """
     Returns: template_data, user_data. Both as id's
     template_data: {chat_id:[template1,...]}
     user_data: [{"id":chat_id, "in":sentence_in, "out":sentence_out}, ...]
     """
-
-
     all_data = []
     all_words = []
     all_data2id = []
@@ -60,8 +44,6 @@ def read(filename, word2id, add_new_words, glove_vocab = None):
             all_words.extend(answer)
             for sentence in resources:
                 all_words.extend(sentence)
-
-            ################### Tot hier heb ik aangepast ######################
 
             # if training, have to go through all the data first
             if add_new_words:
@@ -169,3 +151,16 @@ def get_datasets(path, batch_size, glove_vocab = None, print_freqs = False):
     print("==== Finished getting the datasets ====\n")
 
     return train_data, dev_data, test_data, word2id
+
+# Copied from https://github.com/nikitacs16/d_bi_att_flow
+def process_tokens(temp_tokens):
+    tokens = []
+    for token in temp_tokens:
+        flag = False
+        l = ("-", "\u2212", "\u2014", "\u2013", "/", "~", '"', "'", "\u201C", "\u2019", "\u201D", "\u2018", "\u00B0")
+        tokens.extend(re.split("([{}])".format("".join(l)), token))
+    return tokens
+
+# Copied from https://github.com/nikitacs16/d_bi_att_flow
+def word_tokenize(tokens):
+    return [token.replace("''", '"').replace("``", '"') for token in nltk.word_tokenize(tokens)]
