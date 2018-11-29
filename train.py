@@ -17,9 +17,12 @@ class P:
   MERGE_TYPE = "oracle"
   SAVE_DIR = 'checkpoints'
   
-def evaluate(data, model, word2id, decoder_loss_fn, saliency_loss_fn, device):
-  # TODO: Genereren per 1, niet batches.
-  # Zinnen opslaan in doc voor evaluatie.
+def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, device):
+  """
+  Evaluates and saves the generated sentences to the txt files. The postfix can be used for denoting the progress of training so far.
+  """
+  
+  FOLDER = "evaluation/result_data/"
   print()
   total_decoder_loss = 0
   total_saliency_loss = 0
@@ -40,21 +43,18 @@ def evaluate(data, model, word2id, decoder_loss_fn, saliency_loss_fn, device):
     
     for inp, templ in zip(input, templates):
       response, _ = model.respond(device, word2id, [inp], [templ], max_length=20)
-      str_input = word2id.id2string(inp)
-      str_response = word2id.id2string(response)
-#      print('\nInput: \t\t {}'.format(str_input))
-#      print('Response: \t {}'.format(str_response))
       
-      save_sentence_to_file(str_input, "input_str.txt")
-      save_sentence_to_file(str_response, "response_str.txt")
+      # Write the results to txt files
+      # Write the indices version.
+      save_sentence_to_file(' '.join(str(e) for e in list(inp.cpu().numpy())), "{}input_ids_{}.txt".format(FOLDER, postfix))
+      save_sentence_to_file(' '.join(str(e) for e in list(response.cpu().numpy())), "{}response_ids_{}.txt".format(FOLDER, postfix))
       
-      save_sentence_to_file(' '.join(str(e) for e in list(inp.numpy())), "input_idstxt")
-      save_sentence_to_file(' '.join(str(e) for e in list(response.numpy())), "response_ids.txt")
-      
-    raise NotImplementedError("±±± ±±± ±±±")
-
+      # Write the string version.
+#      save_sentence_to_file(word2id.id2string(inp), "{}input_str_{}.txt".format(FOLDER, postfix))
+#      save_sentence_to_file(word2id.id2string(response), "{}response_str_{}.txt".format(FOLDER, postfix))
+  
     print_progress("Evaluating: ",P, epoch, batch_num, len(data), saliency_loss, decoder_loss, start_time)
-
+  print()
 
 
 # %%
@@ -99,7 +99,6 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
     opt.step()
 
     
-    # TODO: Check of de input zinnen wel kloppen..
 #    for inp, templ in zip(input, templates):
 #      response, _ = model.respond(device, word2id, [inp], [templ], max_length=20)
 #      print('\nInput: \t\t {}'.format(word2id.id2string(inp)))
@@ -108,8 +107,11 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
     # Progress
     print_progress("Training: ", P, epoch, batch_num, len(train_data), saliency_loss.item(), decoder_loss.item(), start_time)
 
-#    if batch_num % 100 == 0:
-#      evaluate(val_data, model, word2id, decoder_loss_fn, saliency_loss_fn, device)
+#    if batch_num != 0 and batch_num % 100 == 0:
+#  postfix = "e{}_i{}".format(epoch,batch_num)
+    postfix = "e{}".format(epoch)
+  evaluate(postfix, val_data, model, word2id, decoder_loss_fn, saliency_loss_fn, device)
+      
   save_checkpoint(P, epoch, model, opt)
 
 # %%
