@@ -28,33 +28,36 @@ class Word2Id:
     self.string2id(self.TAG_EOS, True) # Give EOS id 2.
     self.string2id(self.TAG_PAD, True) # Give PAD id 3.
 
-  def most_common2id(self, most_common, glove_embeddings, top_n):
+  def frequent_words2id(self, counter, glove_embeddings, freq_threshold):
       """
-      Add the most_common words that occurs in the GLoVE set to Word2Id.
-      Input: the list of tuples with the most common words and their frequencies.
+      Add the frequent words that occurs in the GLoVE set to Word2Id.
+      Input: the list of tuples with all the words from the training set and 
+      their frequencies.
       """
-      print("Start getting the top {} words".format(top_n))
-      start = time.time()
-      i = 0
+      print("Start getting the words that occur more than {} times".format(freq_threshold))
+      start = time.time()      
+      print("Size of the training dataset: {} words".format(len(counter.keys())))
+      print("Size of GLoVE: {} words".format(len(glove_embeddings)))
+
+      # Keep the words that appear more than the threshold.
+      frequent_words = [word for word, freq in counter.items() if freq > freq_threshold]
       
-      print("Size of GLoVE: {}".format(len(glove_embeddings)))
+      
+      keys = counter.keys()
+      intersect = list(set(keys).intersection(glove_embeddings))
+      print("Without a threshold, the number of words in the intersection is: {}".format(len(intersect)))
+      
       # Only get the words that occur in both the dataset and the glove embeddings,
       # so that it is not needed to loop through the whole glove set.
-      
-      most_common_words = [word for word, _ in most_common]
-      
-      intersection = list(set(most_common_words).intersection(glove_embeddings))
+      intersection = list(set(frequent_words).intersection(glove_embeddings))
       print("Size of the intersection: {}".format(len(intersection)))
       
-      for word in most_common_words:
-          if i < top_n:
-              if word in intersection:
-                  self._process_single_string(word, True)
-                  i += 1
-          else:
-              break
+      # Add the words to word2id.
+      for word in intersection:
+          self._process_single_string(word, True)
+
       end = time.time()
-      print("-- Finished getting the top {} words".format(top_n))
+      print("-- Finished getting the {} words that occur more than {} times".format(len(intersection), freq_threshold))
       print("It took {:.2f} seconds\n".format(end-start))
           
   def datapoint2id(self, question, answer, resources):
@@ -79,7 +82,7 @@ class Word2Id:
     """
     # Instead of data.split(), the re is used to split special characters as individual words, too.
     list_ids = [self.tag_id_bos] # Add begin of sentence tag.
-    for word in data.split():
+    for word in data:
       wid = self._process_single_string(word, add_new_words)
       list_ids.append(wid)
     list_ids.append(self.tag_id_eos) # Add end of sentence tag.
@@ -89,7 +92,7 @@ class Word2Id:
   def _process_single_string(self, word, add_new_words):
     """
     It returns an id and updates w2id. The input word will be processed as well.
-    Input: a slingle word
+    Input: a single word
     Output: a single id.
     """
     # processing word
