@@ -5,6 +5,8 @@ from torch.utils.data import Dataset, DataLoader
 from word2id import Word2Id
 import matplotlib.pyplot as plt
 import time
+import nltk
+import re
 
 def read(filename, word2id, add_new_words, glove_vocab = None):
     """
@@ -12,11 +14,10 @@ def read(filename, word2id, add_new_words, glove_vocab = None):
     template_data: {chat_id:[template1,...]}
     user_data: [{"id":chat_id, "in":sentence_in, "out":sentence_out}, ...]
     """
-
     all_data = []
     all_words = []
     all_data2id = []
-    
+
     print("Reading the file")
     start = time.time()
     with open(filename) as file:
@@ -24,33 +25,37 @@ def read(filename, word2id, add_new_words, glove_vocab = None):
         data = json_data["data"]
         for line in data:
             paragraph = line["paragraphs"][0] # list only consists of one paragraph
-            context = paragraph["context"]
+            context = paragraph["context"].lower()
             qas = paragraph["qas"][0] # list only consists of one Q&A
             question = qas["question"].lower()
             answer_info = qas["answers"][0] # list only consists of one answer
             answer = answer_info["text"].lower()
             answer_start = answer_info["answer_start"]
             qa_id = qas["id"]
-            
-            resources = [x.lstrip().rstrip().lower() for x in context.split(".") if len(x) > 0]
-            resources = [sentence + "." for sentence in resources]
-                        
-            all_words.extend(question.split())
-            all_words.extend(answer.split())
+
+            question = process_tokens(word_tokenize(question))
+            answer = process_tokens(word_tokenize(answer))
+
+            context = context.replace("''", '" ').replace("``", '" ')
+            resources = list(map(word_tokenize, nltk.sent_tokenize(context)))
+            resources = [process_tokens(tokens) for tokens in resources]
+
+            all_words.extend(question)
+            all_words.extend(answer)
             for sentence in resources:
-                all_words.extend(sentence.split())
-            
+                all_words.extend(sentence)
+
             # if training, have to go through all the data first
             if add_new_words:
-                all_data.append({"qa_id": qa_id, "question": question, "answer": answer, 
+                all_data.append({"qa_id": qa_id, "question": question, "answer": answer,
                                  "answer_start": answer_start, "resources": resources})
 
             # if testing or validation, can already convert to ids
             else:
                 question2id, answer2id, resources2id = word2id.datapoint2id(question, answer, resources)
-                all_data2id.append({"qa_id": qa_id, "question": question2id, "answer": answer2id, 
+                all_data2id.append({"qa_id": qa_id, "question": question2id, "answer": answer2id,
                                     "answer_start": answer_start, "resources": resources2id})
-    
+
     end = time.time()
     print("-- Finished reading the file")
     print("It took {:.2f} seconds\n".format(end-start))
@@ -58,7 +63,7 @@ def read(filename, word2id, add_new_words, glove_vocab = None):
     # if training, have to get the most common words first
     if add_new_words:
         print("Adding words to the word2id")
-        
+
         # get the most common words that occur in the GLoVE set and convert them to ids
         counter = Counter(all_words)
         most_common = counter.most_common()
@@ -71,11 +76,11 @@ def read(filename, word2id, add_new_words, glove_vocab = None):
             answer = datapoint["answer"]
             resources = datapoint["resources"]
             answer_start = datapoint["answer_start"]
-            
+
             question2id, answer2id, resources2id = word2id.datapoint2id(question, answer, resources)
 
-            all_data2id.append({"qa_id": qa_id, "question": question2id, 
-                                "answer": answer2id, "answer_start": answer_start, 
+            all_data2id.append({"qa_id": qa_id, "question": question2id,
+                                "answer": answer2id, "answer_start": answer_start,
                                 "resources": resources2id})
         end = time.time()
         print("Finished adding words to the word2id")
@@ -146,3 +151,16 @@ def get_datasets(path, batch_size, glove_vocab = None, print_freqs = False):
     print("==== Finished getting the datasets ====\n")
 
     return train_data, dev_data, test_data, word2id
+
+# Copied from https://github.com/nikitacs16/d_bi_att_flow
+def process_tokens(temp_tokens):
+    tokens = []
+    for token in temp_tokens:
+        flag = False
+        l = ("-", "\u2212", "\u2014", "\u2013", "/", "~", '"', "'", "\u201C", "\u2019", "\u201D", "\u2018", "\u00B0")
+        tokens.extend(re.split("([{}])".format("".join(l)), token))
+    return tokens
+
+# Copied from https://github.com/nikitacs16/d_bi_att_flow
+def word_tokenize(tokens):
+    return [token.replace("''", '"').replace("``", '"') for token in nltk.word_tokenize(tokens)]
