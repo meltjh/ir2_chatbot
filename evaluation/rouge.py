@@ -23,6 +23,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from time import time
+
 import itertools
 import numpy as np
 
@@ -79,6 +81,19 @@ def _len_lcs(x, y):
   n, m = len(x), len(y)
   return table[n, m]
 
+def print_progress(batch_num: int, num_batches: int, start_time: float) -> None:
+  elapsed_time = time() - start_time
+  average_rate = elapsed_time / (batch_num + 1)
+  remaining_time = average_rate * (num_batches - batch_num)
+
+  print('\rIteration {:03d}/{:03d} ({:02d}:{:02d}/{:02d}:{:02d})'.format(
+    (batch_num),
+    num_batches,
+    int(elapsed_time // 60),
+    int(elapsed_time % 60),
+    int(remaining_time // 60),
+    int(remaining_time % 60),
+  ), end='')
 
 def _lcs(x, y):
   """
@@ -94,9 +109,12 @@ def _lcs(x, y):
   Returns:
     Table of dictionary of coord and len lcs
   """
+  begin_time = time()
   n, m = len(x), len(y)
   table = dict()
   for i in range(n + 1):
+    if i % 100 == 0:
+      print_progress(i, n, begin_time)
     for j in range(m + 1):
       if i == 0 or j == 0:
         table[i, j] = 0
