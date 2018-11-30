@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import time
 import nltk
 import re
+import numpy as np
 
 def read(filename, word2id, add_new_words, glove_vocab = None):
     """
@@ -66,8 +67,22 @@ def read(filename, word2id, add_new_words, glove_vocab = None):
 
         # get the most common words that occur in the GLoVE set and convert them to ids
         counter = Counter(all_words)
-        most_common = counter.most_common()
-        word2id.most_common2id(most_common, glove_vocab, 20000)
+        
+        # TODO Om de frequencies ff te plotten
+#        most_common = counter.most_common()
+#        freqs = Counter([val for _, val in most_common])
+#        vals = [val2 for _, val2 in freqs.most_common()]
+#        idx = np.arange(len(freqs))
+#        
+#        bar_width = 0.35
+#
+#        plt.bar(idx, vals)
+#
+#        # add labels
+#        plt.xticks(idx + bar_width, freqs.keys())
+#        plt.show()
+
+        word2id.frequent_words2id(counter, glove_vocab, 500)
         print("Getting the training set\n")
         # convert all the data to ids
         for datapoint in all_data:
