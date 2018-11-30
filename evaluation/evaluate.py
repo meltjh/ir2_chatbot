@@ -29,7 +29,6 @@ print("\nCalculating blue score...")
 bl = bleu.moses_multi_bleu(decoded, ref)
 print(bl)
 
-
 # Rouge 1
 print("\nCalculating the rouge 1 score...")
 f1_score, precision, recall = rouge.rouge_n(decoded, ref, 1)
@@ -39,7 +38,6 @@ print(f1_score, precision, recall)
 print("\nCalculating the rouge 2 score...")
 f1_score, precision, recall = rouge.rouge_n(decoded, ref, 2)
 print(f1_score, precision, recall)
-
 
 # Rouge l
 print("\nCalculating the rouge l score...")
