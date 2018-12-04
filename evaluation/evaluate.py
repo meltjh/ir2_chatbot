@@ -40,10 +40,10 @@ print("\nCalculating the rouge 2 score...")
 f1_score, precision, recall = rouge.rouge_n(decoded, ref, 2)
 print(f1_score, precision, recall)
 
-# Rouge l
-print("\nCalculating the rouge l score...")
-f1_score, precision, recall = rouge.rouge_l_sentence_level(decoded, ref)
-print(f1_score, precision, recall)
+## Rouge l
+#print("\nCalculating the rouge l score...")
+#f1_score, precision, recall = rouge.rouge_l_sentence_level(decoded, ref)
+#print(f1_score, precision, recall)
 
 
 
