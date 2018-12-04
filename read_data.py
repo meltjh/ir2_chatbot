@@ -1,5 +1,5 @@
 import json
-from collections import Counter
+from collections import Counter, OrderedDict
 from ChatsDataset import ChatsDataset
 from torch.utils.data import Dataset, DataLoader
 from word2id import Word2Id
@@ -26,11 +26,11 @@ def read(filename, word2id, add_new_words, glove_vocab = None):
         data = json_data["data"]
         for line in data:
             paragraph = line["paragraphs"][0] # list only consists of one paragraph
-            context = paragraph["context"].lower()
+            context = paragraph["context"] #.lower()
             qas = paragraph["qas"][0] # list only consists of one Q&A
-            question = qas["question"].lower()
+            question = qas["question"] #.lower()
             answer_info = qas["answers"][0] # list only consists of one answer
-            answer = answer_info["text"].lower()
+            answer = answer_info["text"] #.lower()
             answer_start = answer_info["answer_start"]
             qa_id = qas["id"]
 
@@ -67,20 +67,10 @@ def read(filename, word2id, add_new_words, glove_vocab = None):
 
         # get the most common words that occur in the GLoVE set and convert them to ids
         counter = Counter(all_words)
+#        plot_word_counts(counter)
         
         # TODO Om de frequencies ff te plotten
 #        most_common = counter.most_common()
-#        freqs = Counter([val for _, val in most_common])
-#        vals = [val2 for _, val2 in freqs.most_common()]
-#        idx = np.arange(len(freqs))
-#        
-#        bar_width = 0.35
-#
-#        plt.bar(idx, vals)
-#
-#        # add labels
-#        plt.xticks(idx + bar_width, freqs.keys())
-#        plt.show()
 
         word2id.frequent_words2id(counter, glove_vocab, 500)
         print("Getting the training set\n")
@@ -102,6 +92,27 @@ def read(filename, word2id, add_new_words, glove_vocab = None):
         print("It took {:.2f} seconds\n".format(end-start))
 
     return all_data2id
+#
+#def plot_word_counts(counter):
+#    freqs = Counter([val for _, val in counter.items()])
+#    sorted_freqs = OrderedDict(sorted(freqs.items()))
+#    
+#    max_freq = list(sorted_freqs.keys())[-1]
+#    
+#    x = np.arange(max_freq)
+#    
+#    vals = [val2 for _, val2 in sorted_freqs.items()]
+#    idx = np.arange(len(sorted_freqs))
+#    
+#    bar_width = 0.35
+#
+#    plt.bar(idx, vals)
+#    plt.
+#
+#    # add labels
+#    plt.xticks(idx + bar_width, sorted_freqs.keys())
+#    plt.show()
+#    exit
 
 def print_counts(template_data, user_data):
     # TODO: nog goed maken.
@@ -171,6 +182,7 @@ def get_datasets(path, batch_size, glove_vocab = None, print_freqs = False):
 def process_tokens(temp_tokens):
     tokens = []
     for token in temp_tokens:
+        token = token.lower()
         flag = False
         l = ("-", "\u2212", "\u2014", "\u2013", "/", "~", '"', "'", "\u201C", "\u2019", "\u201D", "\u2018", "\u00B0")
         tokens.extend(re.split("([{}])".format("".join(l)), token))

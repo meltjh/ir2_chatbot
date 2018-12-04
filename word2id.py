@@ -42,16 +42,14 @@ class Word2Id:
       # Keep the words that appear more than the threshold.
       frequent_words = [word for word, freq in counter.items() if freq > freq_threshold]
       
-      
       keys = counter.keys()
-      intersect = list(set(keys).intersection(glove_embeddings))
-      print("Without a threshold, the number of words in the intersection is: {}".format(len(intersect)))
+      intersect_no_threshold = list(set(keys).intersection(glove_embeddings))
+      print("Without a threshold, the number of words in the intersection is: {}".format(len(intersect_no_threshold)))
       
       # Only get the words that occur in both the dataset and the glove embeddings,
       # so that it is not needed to loop through the whole glove set.
       intersection = list(set(frequent_words).intersection(glove_embeddings))
-      print("Size of the intersection: {}".format(len(intersection)))
-      
+
       # Add the words to word2id.
       for word in intersection:
           self._process_single_string(word, True)
