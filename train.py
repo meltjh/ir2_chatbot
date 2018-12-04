@@ -11,9 +11,9 @@ from embeddings import get_glove_embeddings, get_embeddings_matrix
 # Params
 class P:
   NUM_EPOCHS = 10
-  BATCH_SIZE = 10
-  HIDDEN_DIM = 150
-  EMBEDDING_DIM = 50
+  BATCH_SIZE = 50
+  HIDDEN_DIM = 256
+  EMBEDDING_DIM = 100
   MERGE_TYPE = "oracle"
   SAVE_DIR = 'checkpoints'
   
