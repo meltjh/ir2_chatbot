@@ -72,7 +72,7 @@ def read(filename, word2id, add_new_words, glove_vocab = None):
         # TODO Om de frequencies ff te plotten
 #        most_common = counter.most_common()
 
-        word2id.frequent_words2id(counter, glove_vocab, 500)
+        word2id.frequent_words2id(counter, glove_vocab, 9)
         print("Getting the training set\n")
         # convert all the data to ids
         for datapoint in all_data:
@@ -172,8 +172,8 @@ def get_datasets(path, batch_size, glove_vocab = None, print_freqs = False):
     print("==== Getting the datasets ====\n")
     word2id = Word2Id()
     train_data = get_single_dataset(path + "train-v1.1.json", word2id, batch_size, True, glove_vocab, print_freqs)
-    dev_data = get_single_dataset(path + "/dev-v1.1.json", word2id, batch_size, False, print_freqs)
-    test_data = get_single_dataset(path + "/test-v1.1.json", word2id, batch_size, False, print_freqs)
+    dev_data = get_single_dataset(path + "dev-v1.1.json", word2id, batch_size, False, print_freqs)
+    test_data = get_single_dataset(path + "test-v1.1.json", word2id, batch_size, False, print_freqs)
     print("==== Finished getting the datasets ====\n")
 
     return train_data, dev_data, test_data, word2id
