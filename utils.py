@@ -50,16 +50,12 @@ def save_checkpoint(P, epoch: int, model: nn.Module, optimiser: Optimizer) -> No
 
   file = '{}/checkpoint-{}.pth'.format(P.SAVE_DIR, epoch+1)
   torch.save(state, file)
-  
-  print("File {} exists: {}".format(file, os.path.exists(file)))
-  if os.path.exists(file):
-      files.download(file)
 
 
 def load_checkpoint(P, model: nn.Module, optimiser: Optimizer) -> int:
   epoch = 0
   if os.path.exists(P.SAVE_DIR):
-    checkpoints = [os.path.join(P.SAVE_DIR, f) for f in os.listdir(P.SAVE_DIR) if f.endswith('.pt')]
+    checkpoints = [os.path.join(P.SAVE_DIR, f) for f in os.listdir(P.SAVE_DIR) if f.endswith('.pth')]
 
     if checkpoints:
       latest_checkpoint = max(checkpoints, key=os.path.getctime)

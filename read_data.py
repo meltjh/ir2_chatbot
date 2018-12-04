@@ -171,7 +171,7 @@ def get_datasets(path, batch_size, glove_vocab = None, print_freqs = False):
     """
     print("==== Getting the datasets ====\n")
     word2id = Word2Id()
-    train_data = get_single_dataset(path + "test-v1.1.json", word2id, batch_size, True, glove_vocab, print_freqs)
+    train_data = get_single_dataset(path + "train-v1.1.json", word2id, batch_size, True, glove_vocab, print_freqs)
     dev_data = get_single_dataset(path + "dev-v1.1.json", word2id, batch_size, False, print_freqs)
     test_data = get_single_dataset(path + "test-v1.1.json", word2id, batch_size, False, print_freqs)
     print("==== Finished getting the datasets ====\n")
