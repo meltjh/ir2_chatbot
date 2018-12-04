@@ -47,7 +47,7 @@ def save_checkpoint(P, epoch: int, model: nn.Module, optimiser: Optimizer) -> No
     'optimiser': optimiser.state_dict()
   }
 
-  file = '{}/checkpoint-{}.pt'.format(P.SAVE_DIR, epoch+1)
+  file = '{}/checkpoint-{}.pth'.format(P.SAVE_DIR, epoch+1)
   torch.save(state, file)
   
   print("File {} exists: {}".format(file, os.path.exists(file)))
