@@ -6,6 +6,7 @@ import torch.nn as nn
 from torch import Tensor
 from torch.optim import Optimizer
 from time import time
+from google.colab import files
 
 def print_progress(prefix: str, P, epoch: int, batch_num: int, num_batches: int, saliency_loss: Tensor, decoder_loss: Tensor, start_time: float) -> None:
   elapsed_time = time() - start_time
@@ -51,6 +52,9 @@ def save_checkpoint(P, epoch: int, model: nn.Module, optimiser: Optimizer) -> No
   torch.save(state, file)
   
   print("File {} exists: {}".format(file, os.path.exists(file)))
+  if os.path.exists(file):
+      files.download(file)
+
 
 def load_checkpoint(P, model: nn.Module, optimiser: Optimizer) -> int:
   epoch = 0
