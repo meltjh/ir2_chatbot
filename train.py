@@ -63,7 +63,7 @@ print("Merge type: {}, epochs: {}, batch size: {}, hidden dim: {}, embedding dim
 # Init
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 glove_vocab, glove_embeddings = get_glove_embeddings(P.EMBEDDING_DIM)
-train_data, val_data, _, word2id = get_datasets("data/experiment_data/bidaf/oracle_short/", P.BATCH_SIZE, glove_vocab, False)
+train_data, val_data, _, word2id = get_datasets("data/experiment_data/bidaf/{}_short/".format(P.MERGE_TYPE), P.BATCH_SIZE, glove_vocab, False)
 vocab_size = len(word2id.id2w)
 embeddings_matrix = get_embeddings_matrix(glove_embeddings, word2id, vocab_size, P.EMBEDDING_DIM)
 
