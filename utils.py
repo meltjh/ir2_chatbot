@@ -47,7 +47,10 @@ def save_checkpoint(P, epoch: int, model: nn.Module, optimiser: Optimizer) -> No
     'optimiser': optimiser.state_dict()
   }
 
-  torch.save(state, '{}/checkpoint-{}.pt'.format(P.SAVE_DIR, epoch+1))
+  file = '{}/checkpoint-{}.pt'.format(P.SAVE_DIR, epoch+1)
+  torch.save(state, file)
+  
+  print("File {} exists: {}".format(file, os.path.exists(file)))
 
 def load_checkpoint(P, model: nn.Module, optimiser: Optimizer) -> int:
   epoch = 0
