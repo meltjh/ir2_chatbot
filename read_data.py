@@ -161,7 +161,7 @@ def get_single_dataset(filename, word2id, batch_size, is_train, glove_vocab = No
 #        print_counts(template_data, user_data)
 
     dataset = ChatsDataset(data)
-    dataloader = DataLoader(dataset, batch_size, collate_fn=dataset.collate)
+    dataloader = DataLoader(dataset, batch_size, collate_fn=dataset.collate, shuffle=True)
     print("-- Finished processing file {}\n".format(filename))
     return dataloader
 
