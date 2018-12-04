@@ -381,3 +381,34 @@ def rouge(hypotheses, references):
       "rouge_l/r_score": rouge_l_r,
       "rouge_l/p_score": rouge_l_p,
   }
+
+
+def rouge_new(hypotheses, references):
+  """Calculates average rouge scores for a list of hypotheses and
+  references"""
+
+  # Filter out hyps that are of 0 length
+  # hyps_and_refs = zip(hypotheses, references)
+  # hyps_and_refs = [_ for _ in hyps_and_refs if len(_[0]) > 0]
+  # hypotheses, references = zip(*hyps_and_refs)
+
+  # Calculate ROUGE-1 F1, precision, recall scores
+  rouge_1 = [
+      rouge_n([hyp], [ref], 1) for hyp, ref in zip(hypotheses, references)
+  ]
+  rouge_1_f, rouge_1_p, rouge_1_r = map(np.mean, zip(*rouge_1))
+
+  # Calculate ROUGE-2 F1, precision, recall scores
+  rouge_2 = [
+      rouge_n([hyp], [ref], 2) for hyp, ref in zip(hypotheses, references)
+  ]
+  rouge_2_f, rouge_2_p, rouge_2_r = map(np.mean, zip(*rouge_2))
+
+  return {
+      "rouge_1/f_score": rouge_1_f,
+      "rouge_1/r_score": rouge_1_r,
+      "rouge_1/p_score": rouge_1_p,
+      "rouge_2/f_score": rouge_2_f,
+      "rouge_2/r_score": rouge_2_r,
+      "rouge_2/p_score": rouge_2_p,
+  }
