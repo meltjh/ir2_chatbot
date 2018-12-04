@@ -1,15 +1,16 @@
 """
     Code from https://github.com/nikitacs16/Holl-E/
 """
-
+import sys
 import glob
 import rouge
 import bleu
 import numpy as np
 
-
-f1 = "result_data/input_ids_e0" # sys.argv[1] #decoded
-f2 = "result_data/response_ids_e0" # sys.argv[2] #reference
+f1 = sys.argv[1] #decoded
+f2 = sys.argv[2] #reference
+#f1 = "result_data/input_ids_e0"
+#f2 = "result_data/response_ids_e0" 
 ref = []
 decoded = []
 
