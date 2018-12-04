@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 #f3 = sys.argv[3] #highest index
 f1 = "result_data/input_ids_e"
 f2 = "result_data/response_ids_e" 
-f3 = 6
+f3 = 3
 ref = []
 decoded = []
 
