@@ -103,47 +103,69 @@ class Bilinear(nn.Module):
     return output_states, batched_saliency
 
 class Model(nn.Module):
-  def __init__(self, word2id, hidden_size, embedding_size, embeddings_matrix):
+  def __init__(self, word2id, hidden_size, embedding_size, embeddings_matrix, use_bilinear):
     super().__init__()
     self.word2id = word2id
     self.vocab_size = len(self.word2id.id2w)
+    self.use_bilinear = use_bilinear
 
     self.embeddings = nn.Embedding(self.vocab_size, embedding_size)
     self.embeddings.weight.data.copy_(torch.from_numpy(embeddings_matrix))
     self.embeddings.requires_grad = False
     self.encoder = Encoder(self.embeddings, hidden_size)
-    self.bilinear = Bilinear(hidden_size)
-    self.decoder = Decoder(self.embeddings, hidden_size)
+    if self.use_bilinear:
+      self.bilinear = Bilinear(hidden_size)
+    self.decoder = Decoder(self.embeddings, hidden_size, self.use_bilinear)
 
   def forward(self, input, target, templates):
     input_encodings, template_encodings, bilinear_mapping = self.encoder(input, templates)
-    template_state, saliency = self.bilinear(input_encodings, template_encodings, bilinear_mapping)
-    response = self.decoder(target, template_state)
-
-    return saliency, response
+    if self.use_bilinear:
+      template_state, saliency = self.bilinear(input_encodings, template_encodings, bilinear_mapping)
+      response = self.decoder(target, template_state)
+      return saliency, response
+    else:
+      response = self.decoder(target, None)
+      return None, response
 
   def respond(self, device, word2id, input, templates, max_length=100):
     bilinear_input, bilinear_templates, stack_mapping = self.encoder(input, templates)
-    template_state, saliency = self.bilinear(bilinear_input, bilinear_templates, stack_mapping)
-
-    return self.decoder.generate(word2id, template_state, max_length, device)
+    
+    if self.use_bilinear:
+      template_state, saliency = self.bilinear(bilinear_input, bilinear_templates, stack_mapping)
+      return self.decoder.generate(word2id, template_state, max_length, device)
+    else:
+      # TODO: Hier is bilinear_input nog niet goed.
+      return self.decoder.generate(word2id, bilinear_input, max_length, device)
 
 
 class Decoder(nn.Module):
-  def __init__(self, embeddings, hidden_size):
+  def __init__(self, embeddings, hidden_size, use_bilinear):
     super().__init__()
 
     self.embeddings = embeddings
-    self.gru = nn.GRU(self.embeddings.embedding_dim, 4*hidden_size)
-    self.out = nn.Linear(4*hidden_size, self.embeddings.num_embeddings)
+    self.use_bilinear = use_bilinear
+    
+    if self.use_bilinear:
+      hidden_size *= 4
+    else:
+      hidden_size *= 2
+    
+    self.gru = nn.GRU(self.embeddings.embedding_dim, hidden_size)
+    self.out = nn.Linear(hidden_size, self.embeddings.num_embeddings)
+    
     self.softmax = nn.LogSoftmax(-1)
 
   def forward(self, target, template_state):
     embedded_targets = [self.embeddings(x[:-1]) for x in target]
     sorted_targets, sort_map_backward, sort_map_forward = sort_by_length(embedded_targets)
-    sorted_template_states = template_state[sort_map_forward]
     packed_targets = pack_sequence(sorted_targets)
-    gru_output, _ = self.gru(packed_targets, sorted_template_states.unsqueeze(0))
+    
+    if self.use_bilinear:
+      sorted_template_states = template_state[sort_map_forward]
+      gru_output, _ = self.gru(packed_targets, sorted_template_states.unsqueeze(0))
+    else:
+      gru_output, _ = self.gru(packed_targets)
+       
     unpacked_gru_output, sequence_lengths = self.unpack_gru_output(gru_output)
     softmax_output = self.softmax(self.out(unpacked_gru_output))
     split_output = self.split_softmax_output(softmax_output, sequence_lengths)

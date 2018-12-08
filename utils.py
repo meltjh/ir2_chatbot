@@ -7,7 +7,7 @@ from torch import Tensor
 from torch.optim import Optimizer
 from time import time
 
-def print_progress(prefix: str, P, epoch: int, batch_num: int, num_batches: int, saliency_loss: Tensor, decoder_loss: Tensor, start_time: float) -> None:
+def print_progress(prefix: str, P, epoch: int, batch_num: int, num_batches: int, saliency_loss: float, decoder_loss: float, start_time: float) -> None:
   elapsed_time = time() - start_time
   average_rate = elapsed_time / (batch_num + 1)
   remaining_time = average_rate * (num_batches - batch_num)
@@ -38,9 +38,6 @@ def unpack_batch(batch: list, device: torch.device) -> tuple:
 
 
 def save_checkpoint(P, epoch: int, model: nn.Module, optimiser: Optimizer) -> None:
-  if not os.path.exists(P.SAVE_DIR):
-    os.mkdir(P.SAVE_DIR)
-
   state = {
     'epoch': epoch + 1,
     'model': model.state_dict(),
@@ -95,3 +92,7 @@ def save_sentence_to_file(sentence, filename, split_token='\n'):
   with open(filename, 'a+') as f:
     f.write(sentence)
     f.write(split_token)
+    
+def make_dir(path):
+  if not os.path.exists(path):
+    os.mkdir(path)
