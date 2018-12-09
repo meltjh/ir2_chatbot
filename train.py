@@ -8,15 +8,15 @@ from embeddings import get_glove_embeddings, get_embeddings_matrix
 
 # Params
 class P:
-  NUM_EPOCHS = 3
-  BATCH_SIZE = 32
-  HIDDEN_DIM = 64
-  EMBEDDING_DIM = 50
+  NUM_EPOCHS = 10
+  BATCH_SIZE = 64
+  HIDDEN_DIM = 128
+  EMBEDDING_DIM = 100
   MERGE_TYPE = "oracle"
-  SAVE_DIR = 'checkpoints/False'
   MIN_OCCURENCE = 500
   USE_BILINEAR = False
-  FOLDER = "evaluation/result_data/False"
+  SAVE_DIR = 'checkpoints/{}/'.format(USE_BILINEAR)
+  FOLDER = "evaluation/result_data/{}/".format(USE_BILINEAR)
   
 make_dir(P.SAVE_DIR)
 make_dir(P.FOLDER)
@@ -123,9 +123,8 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
 #    if batch_num != 0 and batch_num % 100 == 0:
 #  postfix = "e{}_i{}".format(epoch,batch_num)
   
-    # TODO: Moet tabje terug. Maar tijdelijk om ff snel evalueren te testen.
-    postfix = "e{}".format(epoch)
-    evaluate(postfix, val_data, model, word2id, decoder_loss_fn, saliency_loss_fn, device)
+  postfix = "e{}".format(epoch)
+  evaluate(postfix, val_data, model, word2id, decoder_loss_fn, saliency_loss_fn, device)
       
   save_checkpoint(P, epoch, model, opt)
 

@@ -8,20 +8,21 @@ import bleu
 import numpy as np
 import matplotlib.pyplot as plt
 
-f1 = sys.argv[1] #decoded
-f2 = sys.argv[2] #reference
-f3 = sys.argv[3] #highest index
-#f1 = "result_data/input_ids_e"
-#f2 = "result_data/response_ids_e" 
-#f3 = 3
-ref = []
-decoded = []
+#f1 = sys.argv[1] #decoded
+#f2 = sys.argv[2] #reference
+#f3 = sys.argv[3] #highest index
+f1 = "result_data/False/input_ids_e"
+f2 = "result_data/False/response_ids_e" 
+f3 = 2
 
 bl_scores = []
 r1_scores = []
 r2_scores = []
 
 for idx in range(f3+1):
+  ref = []
+  decoded = []
+
   idx = str(idx)
   print("\n\n\nResults for index", idx)
   for i, j in zip(sorted(glob.glob(f1+idx+'*.txt')),sorted(glob.glob(f2+idx+'*.txt'))):

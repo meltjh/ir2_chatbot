@@ -6,18 +6,25 @@ from torch.nn.utils.rnn import pack_sequence, pad_packed_sequence
 from utils import sort_by_length
 
 class Encoder(nn.Module):
-  def __init__(self, embeddings: nn.Embedding, hidden_size: int):
+  def __init__(self, embeddings: nn.Embedding, hidden_size: int, use_bilinear: bool):
     super().__init__()
 
+    self.use_bilinear = use_bilinear
+    
     self.hidden_size = hidden_size
     self.embeddings = embeddings
 
     self.lstm = nn.LSTM(self.embeddings.embedding_dim, self.hidden_size, num_layers=2, bidirectional=True)
 
   def forward(self, input: list, templates: list):
-    # Stack all inputs and templates into one list to process them as batch
-    stacked_input, unstack_mapping = self.stack_inputs(input, templates)
-
+    
+    if self.use_bilinear:
+      # Stack all inputs and templates into one list to process them as batch
+      stacked_input, unstack_mapping = self.stack_inputs(input, templates)
+    else:
+      unstack_mapping = None
+      stacked_input = input
+    
     # Embed the input and template words
     embedded_input = [self.embeddings(x) for x in stacked_input]
 
@@ -38,9 +45,14 @@ class Encoder(nn.Module):
     # Unsort the output to its original stacked order
     encodings = sorted_encodings[unsort_mapping]
 
-    # Match the input and template encodings into two tensors for the bilinear module
-    input_encodings, template_encodings, bilinear_mapping = self.create_bilinear_tensors(encodings, unstack_mapping, templates)
-
+    
+    if self.use_bilinear:
+      # Match the input and template encodings into two tensors for the bilinear module
+      input_encodings, template_encodings, bilinear_mapping = self.create_bilinear_tensors(encodings, unstack_mapping, templates)
+      return input_encodings, template_encodings, bilinear_mapping
+    else:
+      return encodings, None, None
+    
     return input_encodings, template_encodings, bilinear_mapping
 
   def create_bilinear_tensors(self, encodings, unstack_mapping, templates):
@@ -112,7 +124,7 @@ class Model(nn.Module):
     self.embeddings = nn.Embedding(self.vocab_size, embedding_size)
     self.embeddings.weight.data.copy_(torch.from_numpy(embeddings_matrix))
     self.embeddings.requires_grad = False
-    self.encoder = Encoder(self.embeddings, hidden_size)
+    self.encoder = Encoder(self.embeddings, hidden_size, self.use_bilinear)
     if self.use_bilinear:
       self.bilinear = Bilinear(hidden_size)
     self.decoder = Decoder(self.embeddings, hidden_size, self.use_bilinear)
@@ -179,6 +191,9 @@ class Decoder(nn.Module):
 
     for i in range(max_length-2):
       prev_word = self.embeddings(sentence[-1]).unsqueeze(0)
+      
+      # hidden_state.shape is op tweede dim te groot, moet 1 zijn.
+      
       gru_output, hidden_state = self.gru(prev_word, hidden_state)
       linear_out = self.out(gru_output)
       softmax_output = self.softmax(linear_out)
