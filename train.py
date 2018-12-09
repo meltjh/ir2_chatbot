@@ -59,7 +59,7 @@ def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, d
 #      save_sentence_to_file(word2id.id2string(inp), "{}input_str_{}.txt".format(P.FOLDER, postfix))
 #      save_sentence_to_file(word2id.id2string(response), "{}response_str_{}.txt".format(P.FOLDER, postfix))
   
-    print_progress("Evaluating: ",P, epoch, batch_num, len(data), total_saliency_loss/batch_num, total_decoder_loss/batch_num, start_time)
+    print_progress("Evaluating: ",P, epoch, batch_num, len(data), total_saliency_loss/(batch_num+1), total_decoder_loss/(batch_num+1), start_time)
   print()
 
 
@@ -118,12 +118,14 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
 #      print('Response: \t {}'.format(word2id.id2string(response)))
     
     # Progress
-    print_progress("Training: ", P, epoch, batch_num, len(train_data), epoch_total_sailency_loss/batch_num, epoch_total_decoder_loss/batch_num, start_time)
+    print_progress("Training: ", P, epoch, batch_num, len(train_data), epoch_total_sailency_loss/(batch_num+1), epoch_total_decoder_loss/(batch_num+1), start_time)
       
 #    if batch_num != 0 and batch_num % 100 == 0:
 #  postfix = "e{}_i{}".format(epoch,batch_num)
-  postfix = "e{}".format(epoch)
-  evaluate(postfix, val_data, model, word2id, decoder_loss_fn, saliency_loss_fn, device)
+  
+    # TODO: Moet tabje terug. Maar tijdelijk om ff snel evalueren te testen.
+    postfix = "e{}".format(epoch)
+    evaluate(postfix, val_data, model, word2id, decoder_loss_fn, saliency_loss_fn, device)
       
   save_checkpoint(P, epoch, model, opt)
 
