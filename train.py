@@ -8,13 +8,13 @@ from embeddings import get_glove_embeddings, get_embeddings_matrix
 
 # Params
 class P:
-  NUM_EPOCHS = 10
+  NUM_EPOCHS = 25
   BATCH_SIZE = 64
   HIDDEN_DIM = 128
   EMBEDDING_DIM = 100
   MERGE_TYPE = "oracle"
   MIN_OCCURENCE = 500
-  USE_BILINEAR = False
+  USE_BILINEAR = True
   SAVE_DIR = 'checkpoints/{}/'.format(USE_BILINEAR)
   FOLDER = "evaluation/result_data/{}/".format(USE_BILINEAR)
 
@@ -104,6 +104,7 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
     if P.USE_BILINEAR:
       saliency_loss = torch.stack([saliency_loss_fn(sal, true_sal) for sal, true_sal in zip(saliency, target_saliencies)]).mean()
       epoch_total_sailency_loss += saliency_loss.item()
+      epoch_total_decoder_loss += decoder_loss.item()
       (saliency_loss + decoder_loss).backward()
     else:
       decoder_loss.backward()
