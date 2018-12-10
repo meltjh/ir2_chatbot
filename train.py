@@ -17,10 +17,10 @@ class P:
   USE_BILINEAR = False
   SAVE_DIR = 'checkpoints/{}/'.format(USE_BILINEAR)
   FOLDER = "evaluation/result_data/{}/".format(USE_BILINEAR)
-  
+
 make_dir(P.SAVE_DIR)
 make_dir(P.FOLDER)
-  
+
 def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, device):
   """
   Evaluates and saves the generated sentences to the txt files. The postfix can be used for denoting the progress of training so far.
@@ -29,7 +29,7 @@ def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, d
   print()
   total_decoder_loss = 0
   total_saliency_loss = 0
-  
+
   start_time = time()
   for batch_num, batch in enumerate(data):
     # Get batch
@@ -39,27 +39,26 @@ def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, d
 
     decoder_target = [t[1:] for t in target]  # Cut <BOS> from target
     decoder_loss = torch.stack([decoder_loss_fn(res, tar) for res, tar in zip(response, decoder_target)]).mean()
-    
+
     if P.USE_BILINEAR:
       # Only when the bilinear is used, there is a sailency loss.
       saliency_loss = torch.stack([saliency_loss_fn(sal, true_sal) for sal, true_sal in zip(saliency, target_saliencies)]).mean()
       total_saliency_loss += saliency_loss.item()
     total_decoder_loss += decoder_loss.item()
-    
-    
+
     for inp, templ in zip(input, templates):
       response, _ = model.respond(device, word2id, [inp], [templ], max_length=20)
-      
+
       # Write the results to txt files
       # Write the indices version.
       save_sentence_to_file(' '.join(str(e) for e in list(inp.cpu().numpy())), "{}input_ids_{}.txt".format(P.FOLDER, postfix))
       save_sentence_to_file(' '.join(str(e) for e in list(response.cpu().numpy())), "{}response_ids_{}.txt".format(P.FOLDER, postfix))
-      
+
       # Write the string version.
 #      save_sentence_to_file(word2id.id2string(inp), "{}input_str_{}.txt".format(P.FOLDER, postfix))
+
 #      save_sentence_to_file(word2id.id2string(response), "{}response_str_{}.txt".format(P.FOLDER, postfix))
-  
-    print_progress("Evaluating: ",P, epoch, batch_num, len(data), total_saliency_loss/(batch_num+1), total_decoder_loss/(batch_num+1), start_time)
+    print_progress("Evaluating: ", P, epoch, batch_num, len(data), total_saliency_loss/(batch_num+1), total_decoder_loss/(batch_num+1), start_time)
   print()
 
 
@@ -101,7 +100,7 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
 
     decoder_target = [t[1:] for t in target]  # Cut <BOS> from target
     decoder_loss = torch.stack([decoder_loss_fn(res, tar) for res, tar in zip(response, decoder_target)]).mean()
-    
+
     if P.USE_BILINEAR:
       saliency_loss = torch.stack([saliency_loss_fn(sal, true_sal) for sal, true_sal in zip(saliency, target_saliencies)]).mean()
       epoch_total_sailency_loss += saliency_loss.item()
@@ -111,21 +110,21 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
       epoch_total_decoder_loss += decoder_loss.item()
     opt.step()
 
-    
+
 #    for inp, templ in zip(input, templates):
 #      response, _ = model.respond(device, word2id, [inp], [templ], max_length=20)
 #      print('\nInput: \t\t {}'.format(word2id.id2string(inp)))
 #      print('Response: \t {}'.format(word2id.id2string(response)))
-    
+
     # Progress
     print_progress("Training: ", P, epoch, batch_num, len(train_data), epoch_total_sailency_loss/(batch_num+1), epoch_total_decoder_loss/(batch_num+1), start_time)
-      
+
 #    if batch_num != 0 and batch_num % 100 == 0:
 #  postfix = "e{}_i{}".format(epoch,batch_num)
-  
+
   postfix = "e{}".format(epoch)
   evaluate(postfix, val_data, model, word2id, decoder_loss_fn, saliency_loss_fn, device)
-      
+
   save_checkpoint(P, epoch, model, opt)
 
 # %%

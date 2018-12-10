@@ -10,21 +10,21 @@ class Encoder(nn.Module):
     super().__init__()
 
     self.use_bilinear = use_bilinear
-    
+
     self.hidden_size = hidden_size
     self.embeddings = embeddings
 
     self.lstm = nn.LSTM(self.embeddings.embedding_dim, self.hidden_size, num_layers=2, bidirectional=True)
 
   def forward(self, input: list, templates: list):
-    
+
     if self.use_bilinear:
       # Stack all inputs and templates into one list to process them as batch
       stacked_input, unstack_mapping = self.stack_inputs(input, templates)
     else:
       unstack_mapping = None
       stacked_input = input
-    
+
     # Embed the input and template words
     embedded_input = [self.embeddings(x) for x in stacked_input]
 
@@ -45,14 +45,11 @@ class Encoder(nn.Module):
     # Unsort the output to its original stacked order
     encodings = sorted_encodings[unsort_mapping]
 
-    
-    if self.use_bilinear:
-      # Match the input and template encodings into two tensors for the bilinear module
-      input_encodings, template_encodings, bilinear_mapping = self.create_bilinear_tensors(encodings, unstack_mapping, templates)
-      return input_encodings, template_encodings, bilinear_mapping
-    else:
+    if not self.use_bilinear:
       return encodings, None, None
-    
+
+    # Match the input and template encodings into two tensors for the bilinear module
+    input_encodings, template_encodings, bilinear_mapping = self.create_bilinear_tensors(encodings, unstack_mapping, templates)
     return input_encodings, template_encodings, bilinear_mapping
 
   def create_bilinear_tensors(self, encodings, unstack_mapping, templates):
@@ -136,12 +133,12 @@ class Model(nn.Module):
       response = self.decoder(target, template_state)
       return saliency, response
     else:
-      response = self.decoder(target, None)
+      response = self.decoder(target, input_encodings)
       return None, response
 
   def respond(self, device, word2id, input, templates, max_length=100):
     bilinear_input, bilinear_templates, stack_mapping = self.encoder(input, templates)
-    
+
     if self.use_bilinear:
       template_state, saliency = self.bilinear(bilinear_input, bilinear_templates, stack_mapping)
       return self.decoder.generate(word2id, template_state, max_length, device)
@@ -156,28 +153,25 @@ class Decoder(nn.Module):
 
     self.embeddings = embeddings
     self.use_bilinear = use_bilinear
-    
+
     if self.use_bilinear:
       hidden_size *= 4
     else:
       hidden_size *= 2
-    
+
     self.gru = nn.GRU(self.embeddings.embedding_dim, hidden_size)
     self.out = nn.Linear(hidden_size, self.embeddings.num_embeddings)
-    
+
     self.softmax = nn.LogSoftmax(-1)
 
-  def forward(self, target, template_state):
+  def forward(self, target, context_hidden_state):
     embedded_targets = [self.embeddings(x[:-1]) for x in target]
     sorted_targets, sort_map_backward, sort_map_forward = sort_by_length(embedded_targets)
     packed_targets = pack_sequence(sorted_targets)
-    
-    if self.use_bilinear:
-      sorted_template_states = template_state[sort_map_forward]
-      gru_output, _ = self.gru(packed_targets, sorted_template_states.unsqueeze(0))
-    else:
-      gru_output, _ = self.gru(packed_targets)
-       
+
+    sorted_template_states = context_hidden_state[sort_map_forward]
+    gru_output, _ = self.gru(packed_targets, sorted_template_states.unsqueeze(0))
+
     unpacked_gru_output, sequence_lengths = self.unpack_gru_output(gru_output)
     softmax_output = self.softmax(self.out(unpacked_gru_output))
     split_output = self.split_softmax_output(softmax_output, sequence_lengths)
@@ -191,9 +185,9 @@ class Decoder(nn.Module):
 
     for i in range(max_length-2):
       prev_word = self.embeddings(sentence[-1]).unsqueeze(0)
-      
+
       # hidden_state.shape is op tweede dim te groot, moet 1 zijn.
-      
+
       gru_output, hidden_state = self.gru(prev_word, hidden_state)
       linear_out = self.out(gru_output)
       softmax_output = self.softmax(linear_out)
