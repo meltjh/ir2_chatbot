@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 #f1 = sys.argv[1] #decoded
 #f2 = sys.argv[2] #reference
 #f3 = sys.argv[3] #highest index
-f1 = "result_data/True/input_ids_e"
-f2 = "result_data/True/response_ids_e" 
-f3 = 8
+f1 = "result_data/9_True/input_ids_e"
+f2 = "result_data/9_True/response_ids_e" 
+f3 = 24
 
 bl_scores = []
 r1_scores = []

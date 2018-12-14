@@ -8,15 +8,15 @@ from embeddings import get_glove_embeddings, get_embeddings_matrix
 
 # Params
 class P:
-  NUM_EPOCHS = 25
+  NUM_EPOCHS = 50
   BATCH_SIZE = 64
   HIDDEN_DIM = 128
   EMBEDDING_DIM = 100
   MERGE_TYPE = "oracle"
-  MIN_OCCURENCE = 500
+  MIN_OCCURENCE = 9
   USE_BILINEAR = True
-  SAVE_DIR = 'checkpoints/{}/'.format(USE_BILINEAR)
-  FOLDER = "evaluation/result_data/{}/".format(USE_BILINEAR)
+  SAVE_DIR = 'checkpoints/{}_{}/'.format(MIN_OCCURENCE, USE_BILINEAR)
+  FOLDER = "evaluation/result_data/{}_{}/".format(MIN_OCCURENCE, USE_BILINEAR)
 
 make_dir(P.SAVE_DIR)
 make_dir(P.FOLDER)
@@ -55,9 +55,9 @@ def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, d
       save_sentence_to_file(' '.join(str(e) for e in list(response.cpu().numpy())), "{}response_ids_{}.txt".format(P.FOLDER, postfix))
 
       # Write the string version.
-#      save_sentence_to_file(word2id.id2string(inp), "{}input_str_{}.txt".format(P.FOLDER, postfix))
+      save_sentence_to_file(word2id.id2string(inp), "{}input_str_{}.txt".format(P.FOLDER, postfix))
 
-#      save_sentence_to_file(word2id.id2string(response), "{}response_str_{}.txt".format(P.FOLDER, postfix))
+      save_sentence_to_file(word2id.id2string(response), "{}response_str_{}.txt".format(P.FOLDER, postfix))
     print_progress("Evaluating: ", P, epoch, batch_num, len(data), total_saliency_loss/(batch_num+1), total_decoder_loss/(batch_num+1), start_time)
   print()
 
