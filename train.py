@@ -1,22 +1,55 @@
+import argparse
 import torch
 import torch.nn as nn
 from time import time
-from utils import print_progress, save_checkpoint, load_checkpoint, unpack_batch, save_sentence_to_file, make_dir
+from utils import print_progress, save_checkpoint, load_checkpoint, unpack_batch, sentences_saver, make_dir
 from models import Model
 from read_data import get_datasets
 from embeddings import get_glove_embeddings, get_embeddings_matrix
 
+
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument('--exp_id_prefix', type=str, default="default",
+                    help='the previx of this experiment')
+
+parser.add_argument('--n_epochs', type=int, default=50,
+                    help='number of epochs')
+
+parser.add_argument('--batch_size', type=int, default=64,
+                    help='batch size')
+
+parser.add_argument('--hidden_dim', type=int, default=128,
+                    help='dimensionality of the hidden space')
+
+parser.add_argument('--emb_dim', type=int, default=100,
+                    help='dimensionality of the word embeddings')
+
+parser.add_argument('--merge_type', type=str, default='oracle',
+                    help='dataset')
+
+parser.add_argument('--min_occ', type=int, default=500,
+                    help='minimal amount of occurences for a word to be used')
+
+parser.add_argument('--use_bilin', type=bool, default=True,
+                    help='is the bilinear part used')
+
+args, _ = parser.parse_known_args()
+
+
 # Params
 class P:
-  NUM_EPOCHS = 50
-  BATCH_SIZE = 64
-  HIDDEN_DIM = 128
-  EMBEDDING_DIM = 100
-  MERGE_TYPE = "oracle"
-  MIN_OCCURENCE = 9
-  USE_BILINEAR = True
-  SAVE_DIR = 'checkpoints/{}_{}/'.format(MIN_OCCURENCE, USE_BILINEAR)
-  FOLDER = "evaluation/result_data/{}_{}/".format(MIN_OCCURENCE, USE_BILINEAR)
+  NUM_EPOCHS = args.n_epochs
+  BATCH_SIZE = args.batch_size
+  HIDDEN_DIM = args.hidden_dim
+  EMBEDDING_DIM = args.emb_dim
+  MERGE_TYPE = args.merge_type
+  MIN_OCCURENCE = args.min_occ
+  USE_BILINEAR = args.use_bilin
+  EXP_ID_PREFIX = args.exp_id_prefix
+  SAVE_DIR = 'checkpoints/{}_{}_{}/'.format(EXP_ID_PREFIX, MIN_OCCURENCE, USE_BILINEAR)
+  FOLDER = "evaluation/result_data/{}_{}_{}/".format(EXP_ID_PREFIX, MIN_OCCURENCE, USE_BILINEAR)
 
 make_dir(P.SAVE_DIR)
 make_dir(P.FOLDER)
@@ -25,6 +58,11 @@ def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, d
   """
   Evaluates and saves the generated sentences to the txt files. The postfix can be used for denoting the progress of training so far.
   """
+  
+  saver_input_ids = sentences_saver("{}input_ids_{}.txt".format(P.FOLDER, postfix))
+  saver_response_ids = sentences_saver("{}response_ids_{}.txt".format(P.FOLDER, postfix))
+  saver_input_str = sentences_saver("{}input_str_{}.txt".format(P.FOLDER, postfix))
+  saver_response_str = sentences_saver("{}response_str_{}.txt".format(P.FOLDER, postfix))
 
   print()
   total_decoder_loss = 0
@@ -51,15 +89,19 @@ def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, d
 
       # Write the results to txt files
       # Write the indices version.
-      save_sentence_to_file(' '.join(str(e) for e in list(inp.cpu().numpy())), "{}input_ids_{}.txt".format(P.FOLDER, postfix))
-      save_sentence_to_file(' '.join(str(e) for e in list(response.cpu().numpy())), "{}response_ids_{}.txt".format(P.FOLDER, postfix))
+      saver_input_ids.store_sentence(' '.join(str(e) for e in list(inp.cpu().numpy())))
+      saver_response_ids.store_sentence(' '.join(str(e) for e in list(response.cpu().numpy())))
 
       # Write the string version.
-      save_sentence_to_file(word2id.id2string(inp), "{}input_str_{}.txt".format(P.FOLDER, postfix))
+      saver_input_str.store_sentence(word2id.id2string(inp))
+      saver_response_str.store_sentence(word2id.id2string(response))
 
-      save_sentence_to_file(word2id.id2string(response), "{}response_str_{}.txt".format(P.FOLDER, postfix))
     print_progress("Evaluating: ", P, epoch, batch_num, len(data), total_saliency_loss/(batch_num+1), total_decoder_loss/(batch_num+1), start_time)
   print()
+  saver_input_ids.write_to_file()
+  saver_response_ids.write_to_file()
+  saver_input_str.write_to_file()
+  saver_response_str.write_to_file()
 
 
 # %%
@@ -123,10 +165,12 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
 #    if batch_num != 0 and batch_num % 100 == 0:
 #  postfix = "e{}_i{}".format(epoch,batch_num)
 
+
+  save_checkpoint(P, epoch, model, opt)
   postfix = "e{}".format(epoch)
   evaluate(postfix, val_data, model, word2id, decoder_loss_fn, saliency_loss_fn, device)
 
-  save_checkpoint(P, epoch, model, opt)
+  
 
 # %%
 # import importlib, models, utils
@@ -134,3 +178,9 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
 # importlib.reload(utils)
 # from models import Model
 # from utils import print_progress, save_checkpoint, load_checkpoint, unpack_batch
+
+
+# %%
+  
+
+

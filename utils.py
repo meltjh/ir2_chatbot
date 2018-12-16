@@ -44,14 +44,15 @@ def save_checkpoint(P, epoch: int, model: nn.Module, optimiser: Optimizer) -> No
     'optimiser': optimiser.state_dict()
   }
 
-  file = '{}/checkpoint-{}.pth'.format(P.SAVE_DIR, epoch+1)
+  file = '{}/cp-{}.txt'.format(P.SAVE_DIR, epoch+1)
   torch.save(state, file)
 
 def load_checkpoint(P, model: nn.Module, optimiser: Optimizer) -> int:
   epoch = 0
   if os.path.exists(P.SAVE_DIR):
-    checkpoints = [os.path.join(P.SAVE_DIR, f) for f in os.listdir(P.SAVE_DIR) if f.endswith('.pth')]
+    checkpoints = [os.path.join(P.SAVE_DIR, f) for f in os.listdir(P.SAVE_DIR) if f.endswith('.txt')]
 
+    print("checkpoints", checkpoints)
     if checkpoints:
       latest_checkpoint = max(checkpoints, key=os.path.getctime)
       state = torch.load(latest_checkpoint)
@@ -88,10 +89,28 @@ def sort_by_length(input: list) -> tuple:
 
   return sorted_input, backward, forward
 
-def save_sentence_to_file(sentence, filename, split_token='\n'):
-  with open(filename, 'a+') as f:
-    f.write(sentence)
-    f.write(split_token)
+class sentences_saver:
+  """
+  This class is created since the use of online data, adding each individually is very slow. 
+  Saving them in memory and writing at the end is quicker.
+  """
+  
+  def __init__(self, filename, split_token='\n'):
+    self.data = []
+  
+    self.filename = filename
+    self.split_token = split_token
+    
+  def store_sentence(self, sentence):
+    self.data.append(sentence)
+      
+  def write_to_file(self):
+    with open(self.filename, 'a+') as f:
+      for sentence in self.data:
+        f.write(sentence)
+        f.write(self.split_token)
+    self.data = []
+    
     
 def make_dir(path):
   if not os.path.exists(path):

@@ -23,10 +23,10 @@ class Word2Id:
     self.tag_id_eos = 2
     self.tag_id_pad = 3
     # This part is to ensure it is all correctly represented in the mappings.
-    self.string2id(self.TAG_UNK, True) # Give UNK id 0.
-    self.string2id(self.TAG_BOS, True) # Give BOS id 1.
-    self.string2id(self.TAG_EOS, True) # Give EOS id 2.
-    self.string2id(self.TAG_PAD, True) # Give PAD id 3.
+    self.string2id([self.TAG_UNK], True) # Give UNK id 0.
+    self.string2id([self.TAG_BOS], True) # Give BOS id 1.
+    self.string2id([self.TAG_EOS], True) # Give EOS id 2.
+    self.string2id([self.TAG_PAD], True) # Give PAD id 3.
 
   def frequent_words2id(self, counter, glove_embeddings, freq_threshold):
       """
