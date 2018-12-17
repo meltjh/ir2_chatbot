@@ -167,7 +167,7 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
 #  postfix = "e{}_i{}".format(epoch,batch_num)
 
 
-  save_checkpoint(P, epoch, model, opt)
+  save_checkpoint(P, epoch, model, opt, epoch_total_sailency_loss/(batch_num+1), epoch_total_decoder_loss/(batch_num+1))
   postfix = "e{}".format(epoch)
   evaluate(postfix, val_data, model, word2id, decoder_loss_fn, saliency_loss_fn, device)
 
