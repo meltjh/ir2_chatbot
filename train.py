@@ -109,6 +109,7 @@ print("Bilinear: {}, Merge type: {}, epochs: {}, batch size: {}, hidden dim: {},
 
 # Init
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print('device', device)
 glove_vocab, glove_embeddings = get_glove_embeddings(P.EMBEDDING_DIM)
 train_data, val_data, _, word2id = get_datasets("data/experiment_data/bidaf/{}_short/".format(P.MERGE_TYPE), P.BATCH_SIZE, P.MIN_OCCURENCE, glove_vocab, False)
 vocab_size = len(word2id.id2w)
