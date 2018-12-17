@@ -7,6 +7,7 @@ from models import Model
 from read_data import get_datasets
 from embeddings import get_glove_embeddings, get_embeddings_matrix
 
+print("v2")
 
 
 parser = argparse.ArgumentParser()
