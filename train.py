@@ -33,7 +33,7 @@ parser.add_argument('--min_occ', type=int, default=500,
                     help='minimal amount of occurences for a word to be used')
 
 parser.add_argument('--use_bilin', type=bool, default=True,
-                    help='is the bilinear part used')
+                    help='is the bilinear part used') # Note that a '' should be given for False. All strings are True.
 
 args, _ = parser.parse_known_args()
 
