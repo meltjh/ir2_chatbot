@@ -7,7 +7,7 @@ from models import Model
 from read_data import get_datasets
 from embeddings import get_glove_embeddings, get_embeddings_matrix
 
-print("v2")
+print("v3")
 
 
 parser = argparse.ArgumentParser()
@@ -33,8 +33,8 @@ parser.add_argument('--merge_type', type=str, default='oracle',
 parser.add_argument('--min_occ', type=int, default=500,
                     help='minimal amount of occurences for a word to be used')
 
-parser.add_argument('--use_bilin', type=bool, default=True,
-                    help='is the bilinear part used') # Note that a '' should be given for False. All strings are True.
+parser.add_argument('--use_bilin', type=str, default='True',
+                    help='is the bilinear part used')
 
 args, _ = parser.parse_known_args()
 
@@ -47,7 +47,7 @@ class P:
   EMBEDDING_DIM = args.emb_dim
   MERGE_TYPE = args.merge_type
   MIN_OCCURENCE = args.min_occ
-  USE_BILINEAR = args.use_bilin
+  USE_BILINEAR = (args.use_bilin == 'True') or (args.use_bilin == 'y')
   EXP_ID_PREFIX = args.exp_id_prefix
   SAVE_DIR = 'checkpoints/{}_{}_{}/'.format(EXP_ID_PREFIX, MIN_OCCURENCE, USE_BILINEAR)
   FOLDER = "evaluation/result_data/{}_{}_{}/".format(EXP_ID_PREFIX, MIN_OCCURENCE, USE_BILINEAR)

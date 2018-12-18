@@ -8,12 +8,13 @@ import bleu
 import numpy as np
 import matplotlib.pyplot as plt
 
-#f1 = sys.argv[1] #decoded
-#f2 = sys.argv[2] #reference
-#f3 = sys.argv[3] #highest index
-f1 = "result_data/9_True/input_ids_e"
-f2 = "result_data/9_True/response_ids_e" 
-f3 = 24
+fr = sys.argv[1] #folder
+rg = int(sys.argv[2]) #range
+
+f1 = "result_data/{}/input_ids_e".format(fr)
+f2 = "result_data/{}/response_ids_e".format(fr)
+f3 = rg
+
 
 bl_scores = []
 r1_scores = []
@@ -66,6 +67,7 @@ plt.plot(x, r2_scores, label="r2 scores")
 plt.legend()
 plt.xlabel("Epoch")
 plt.ylabel("Score out of 100")
+plt.title(fr)
 plt.show()
 
 
