@@ -2,13 +2,13 @@ import os
 import torch
 import matplotlib.pyplot as plt
 
-def optain_all_data():
+def optain_all_data(location='.'):
   """
   
   """
   
   # Obtain all folders
-  folders = [f for f in os.listdir('.') if os.path.isdir(f)]
+  folders = [f for f in os.listdir(location) if os.path.isdir(f)]
   
   # Process each checkpoint in the folders
   checkpoints_data = []
