@@ -148,7 +148,7 @@ def print_counts(template_data, user_data):
     plt.hist(out_lengths, bins=max(out_lengths))
     plt.show()
 
-def get_single_dataset(filename, word2id, batch_size, is_train, min_occurence, glove_vocab = None, print_freqs = False):
+def get_single_dataset(filename, word2id, batch_size, is_train, min_occurence, shuffle, glove_vocab = None, print_freqs = False):
     """
     Returns a single dataset as dataloader object in batches.
     """
@@ -161,7 +161,7 @@ def get_single_dataset(filename, word2id, batch_size, is_train, min_occurence, g
 #        print_counts(template_data, user_data)
 
     dataset = ChatsDataset(data)
-    dataloader = DataLoader(dataset, batch_size, collate_fn=dataset.collate, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size, collate_fn=dataset.collate, shuffle=shuffle)
     print("-- Finished processing file {}\n".format(filename))
     return dataloader
 
@@ -171,9 +171,9 @@ def get_datasets(path, batch_size, min_occurence, glove_vocab = None, print_freq
     """
     print("==== Getting the datasets ====\n")
     word2id = Word2Id()
-    train_data = get_single_dataset(path + "train-v1.1.json", word2id, batch_size, True, min_occurence, glove_vocab, print_freqs)
-    dev_data = get_single_dataset(path + "dev-v1.1.json", word2id, batch_size, False, min_occurence, print_freqs)
-    test_data = get_single_dataset(path + "test-v1.1.json", word2id, batch_size, False, min_occurence, print_freqs)
+    train_data = get_single_dataset(path + "train-v1.1.json", word2id, batch_size, True, min_occurence, True, glove_vocab, print_freqs)
+    dev_data = get_single_dataset(path + "dev-v1.1.json", word2id, batch_size, False, min_occurence, False, print_freqs)
+    test_data = get_single_dataset(path + "test-v1.1.json", word2id, batch_size, False, min_occurence, False, print_freqs)
     print("==== Finished getting the datasets ====\n")
 
     return train_data, dev_data, test_data, word2id

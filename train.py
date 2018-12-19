@@ -62,8 +62,10 @@ def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, d
   
   saver_input_ids = sentences_saver("{}input_ids_{}.txt".format(P.FOLDER, postfix))
   saver_response_ids = sentences_saver("{}response_ids_{}.txt".format(P.FOLDER, postfix))
+  saver_target_ids = sentences_saver("{}target_ids_{}.txt".format(P.FOLDER, postfix))
   saver_input_str = sentences_saver("{}input_str_{}.txt".format(P.FOLDER, postfix))
   saver_response_str = sentences_saver("{}response_str_{}.txt".format(P.FOLDER, postfix))
+  saver_target_str = sentences_saver("{}target_str_{}.txt".format(P.FOLDER, postfix))
 
   print()
   total_decoder_loss = 0
@@ -85,24 +87,28 @@ def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, d
       total_saliency_loss += saliency_loss.item()
     total_decoder_loss += decoder_loss.item()
 
-    for inp, templ in zip(input, templates):
+    for inp, templ, targ in zip(input, templates, target):
       response, _ = model.respond(device, word2id, [inp], [templ], max_length=20)
 
       # Write the results to txt files
       # Write the indices version.
       saver_input_ids.store_sentence(' '.join(str(e) for e in list(inp.cpu().numpy())))
       saver_response_ids.store_sentence(' '.join(str(e) for e in list(response.cpu().numpy())))
+      saver_target_ids.store_sentence(' '.join(str(e) for e in list(targ.cpu().numpy())))
 
       # Write the string version.
       saver_input_str.store_sentence(word2id.id2string(inp))
       saver_response_str.store_sentence(word2id.id2string(response))
+      saver_target_str.store_sentence(word2id.id2string(targ))
 
     print_progress("Evaluating: ", P, epoch, batch_num, len(data), total_saliency_loss/(batch_num+1), total_decoder_loss/(batch_num+1), start_time)
   print()
   saver_input_ids.write_to_file()
   saver_response_ids.write_to_file()
+  saver_target_ids.write_to_file()
   saver_input_str.write_to_file()
   saver_response_str.write_to_file()
+  saver_target_str.write_to_file()
 
 
 # %%
