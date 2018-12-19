@@ -62,6 +62,7 @@ def load_checkpoint(P, model: nn.Module, optimiser: Optimizer) -> int:
       model.load_state_dict(state['model'])
       optimiser.load_state_dict(state['optimiser'])
       epoch = state['epoch']
+      model.train()
 
   return epoch
 
