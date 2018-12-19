@@ -165,13 +165,16 @@ def get_single_dataset(filename, word2id, batch_size, is_train, min_occurence, s
     print("-- Finished processing file {}\n".format(filename))
     return dataloader
 
-def get_datasets(path, batch_size, min_occurence, glove_vocab = None, print_freqs = False):
+def get_datasets(path, batch_size, min_occurence, glove_vocab = None, print_freqs = False, only_train = False):
     """
     Returns all three datasets and the word2id object.
     """
     print("==== Getting the datasets ====\n")
     word2id = Word2Id()
     train_data = get_single_dataset(path + "train-v1.1.json", word2id, batch_size, True, min_occurence, True, glove_vocab, print_freqs)
+    if only_train:
+      return train_data, _, _, word2id
+    
     dev_data = get_single_dataset(path + "dev-v1.1.json", word2id, batch_size, False, min_occurence, False, print_freqs)
     test_data = get_single_dataset(path + "test-v1.1.json", word2id, batch_size, False, min_occurence, False, print_freqs)
     print("==== Finished getting the datasets ====\n")

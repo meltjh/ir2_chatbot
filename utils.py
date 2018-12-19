@@ -49,20 +49,26 @@ def save_checkpoint(P, epoch: int, model: nn.Module, optimiser: Optimizer, saile
   file = '{}/cp-{}.txt'.format(P.SAVE_DIR, epoch+1)
   torch.save(state, file)
 
-def load_checkpoint(P, model: nn.Module, optimiser: Optimizer) -> int:
+def load_checkpoint(P, model: nn.Module, optimiser: Optimizer, specific_file = None) -> int:
   epoch = 0
   if os.path.exists(P.SAVE_DIR):
-    checkpoints = [os.path.join(P.SAVE_DIR, f) for f in os.listdir(P.SAVE_DIR) if f.endswith('.txt')]
+    latest_checkpoint == ""
+    if specific_file != None:
+      latest_checkpoint = specific_file
+    else:
+      checkpoints = [os.path.join(P.SAVE_DIR, f) for f in os.listdir(P.SAVE_DIR) if f.endswith('.txt')]
+  
+      if checkpoints:
+        latest_checkpoint = max(checkpoints, key=os.path.getctime)
+      else:
+        return None
+   
+    state = torch.load(latest_checkpoint)
 
-    print("checkpoints", checkpoints)
-    if checkpoints:
-      latest_checkpoint = max(checkpoints, key=os.path.getctime)
-      state = torch.load(latest_checkpoint)
-
-      model.load_state_dict(state['model'])
-      optimiser.load_state_dict(state['optimiser'])
-      epoch = state['epoch']
-      model.train()
+    model.load_state_dict(state['model'])
+    optimiser.load_state_dict(state['optimiser'])
+    epoch = state['epoch']
+    model.train()
 
   return epoch
 

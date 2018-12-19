@@ -16,7 +16,8 @@ def optain_all_data():
     print('folder: {}'.format(folder))
     checkpoints = [os.path.join(folder, f) for f in os.listdir(folder) if f.endswith('.txt')]
     
-    checkpoint_data = [None] * len(checkpoints)
+#    checkpoint_data = [None] * len(checkpoints)
+    checkpoint_data = [(-1, -1, -1)] * 25 # Temporal solution for missing data
     for checkpoint in checkpoints:
       state = torch.load(checkpoint, map_location='cpu')
       
@@ -29,8 +30,7 @@ def optain_all_data():
         checkpoint_data[epoch-1] = (sailency_loss, decoder_loss, total_loss)
       else:
         checkpoint_data[epoch-1] = (-1, -1, -1)
-      
-      
+        
     checkpoints_data.append((folder, checkpoint_data))
   return checkpoints_data
     
@@ -49,9 +49,9 @@ def plot_all_data(checkpoints_data: list):
     if max(total_loss) < 0:
       continue
     
-    if max(sailency_loss) > 0:
-      plt.plot(x_indices, sailency_loss, label="{}  sailency".format(checkpoint_name), linestyle='-.', color=color, alpha=0.5)
-      plt.plot(x_indices, decoder_loss, label="{}  decoder".format(checkpoint_name), linestyle=':', color=color, alpha=0.5)
+#    if max(sailency_loss) > 0:
+#      plt.plot(x_indices, sailency_loss, label="{}  sailency".format(checkpoint_name), linestyle='-.', color=color, alpha=0.5)
+#      plt.plot(x_indices, decoder_loss, label="{}  decoder".format(checkpoint_name), linestyle=':', color=color, alpha=0.5)
     plt.plot(x_indices, total_loss, label="{}  total".format(checkpoint_name), linestyle='-', color=color, alpha=0.5)
   
   plt.legend()

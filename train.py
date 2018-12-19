@@ -50,65 +50,65 @@ class P:
   USE_BILINEAR = (args.use_bilin == 'True') or (args.use_bilin == 'y')
   EXP_ID_PREFIX = args.exp_id_prefix
   SAVE_DIR = 'checkpoints/{}_{}_{}/'.format(EXP_ID_PREFIX, MIN_OCCURENCE, USE_BILINEAR)
-  FOLDER = "evaluation/result_data/{}_{}_{}/".format(EXP_ID_PREFIX, MIN_OCCURENCE, USE_BILINEAR)
+#  FOLDER = "evaluation/result_data/{}_{}_{}/".format(EXP_ID_PREFIX, MIN_OCCURENCE, USE_BILINEAR)
 
 make_dir(P.SAVE_DIR)
-make_dir(P.FOLDER)
+#make_dir(P.FOLDER)
 
-def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, device):
-  """
-  Evaluates and saves the generated sentences to the txt files. The postfix can be used for denoting the progress of training so far.
-  """
-  
-  saver_input_ids = sentences_saver("{}input_ids_{}.txt".format(P.FOLDER, postfix))
-  saver_response_ids = sentences_saver("{}response_ids_{}.txt".format(P.FOLDER, postfix))
-  saver_target_ids = sentences_saver("{}target_ids_{}.txt".format(P.FOLDER, postfix))
-  saver_input_str = sentences_saver("{}input_str_{}.txt".format(P.FOLDER, postfix))
-  saver_response_str = sentences_saver("{}response_str_{}.txt".format(P.FOLDER, postfix))
-  saver_target_str = sentences_saver("{}target_str_{}.txt".format(P.FOLDER, postfix))
-
-  print()
-  total_decoder_loss = 0
-  total_saliency_loss = 0
-
-  start_time = time()
-  for batch_num, batch in enumerate(data):
-    # Get batch
-    input, target, templates, target_saliencies = unpack_batch(batch, device)
-
-    saliency, response = model(input, target, templates)
-
-    decoder_target = [t[1:] for t in target]  # Cut <BOS> from target
-    decoder_loss = torch.stack([decoder_loss_fn(res, tar) for res, tar in zip(response, decoder_target)]).mean()
-
-    if P.USE_BILINEAR:
-      # Only when the bilinear is used, there is a sailency loss.
-      saliency_loss = torch.stack([saliency_loss_fn(sal, true_sal) for sal, true_sal in zip(saliency, target_saliencies)]).mean()
-      total_saliency_loss += saliency_loss.item()
-    total_decoder_loss += decoder_loss.item()
-
-    for inp, templ, targ in zip(input, templates, target):
-      response, _ = model.respond(device, word2id, [inp], [templ], max_length=20)
-
-      # Write the results to txt files
-      # Write the indices version.
-      saver_input_ids.store_sentence(' '.join(str(e) for e in list(inp.cpu().numpy())))
-      saver_response_ids.store_sentence(' '.join(str(e) for e in list(response.cpu().numpy())))
-      saver_target_ids.store_sentence(' '.join(str(e) for e in list(targ.cpu().numpy())))
-
-      # Write the string version.
-      saver_input_str.store_sentence(word2id.id2string(inp))
-      saver_response_str.store_sentence(word2id.id2string(response))
-      saver_target_str.store_sentence(word2id.id2string(targ))
-
-    print_progress("Evaluating: ", P, epoch, batch_num, len(data), total_saliency_loss/(batch_num+1), total_decoder_loss/(batch_num+1), start_time)
-  print()
-  saver_input_ids.write_to_file()
-  saver_response_ids.write_to_file()
-  saver_target_ids.write_to_file()
-  saver_input_str.write_to_file()
-  saver_response_str.write_to_file()
-  saver_target_str.write_to_file()
+#def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, device):
+#  """
+#  Evaluates and saves the generated sentences to the txt files. The postfix can be used for denoting the progress of training so far.
+#  """
+#  
+#  saver_input_ids = sentences_saver("{}input_ids_{}.txt".format(P.FOLDER, postfix))
+#  saver_response_ids = sentences_saver("{}response_ids_{}.txt".format(P.FOLDER, postfix))
+#  saver_target_ids = sentences_saver("{}target_ids_{}.txt".format(P.FOLDER, postfix))
+#  saver_input_str = sentences_saver("{}input_str_{}.txt".format(P.FOLDER, postfix))
+#  saver_response_str = sentences_saver("{}response_str_{}.txt".format(P.FOLDER, postfix))
+#  saver_target_str = sentences_saver("{}target_str_{}.txt".format(P.FOLDER, postfix))
+#
+#  print()
+#  total_decoder_loss = 0
+#  total_saliency_loss = 0
+#
+#  start_time = time()
+#  for batch_num, batch in enumerate(data):
+#    # Get batch
+#    input, target, templates, target_saliencies = unpack_batch(batch, device)
+#
+#    saliency, response = model(input, target, templates)
+#
+#    decoder_target = [t[1:] for t in target]  # Cut <BOS> from target
+#    decoder_loss = torch.stack([decoder_loss_fn(res, tar) for res, tar in zip(response, decoder_target)]).mean()
+#
+#    if P.USE_BILINEAR:
+#      # Only when the bilinear is used, there is a sailency loss.
+#      saliency_loss = torch.stack([saliency_loss_fn(sal, true_sal) for sal, true_sal in zip(saliency, target_saliencies)]).mean()
+#      total_saliency_loss += saliency_loss.item()
+#    total_decoder_loss += decoder_loss.item()
+#
+#    for inp, templ, targ in zip(input, templates, target):
+#      response, _ = model.respond(device, word2id, [inp], [templ], max_length=20)
+#
+#      # Write the results to txt files
+#      # Write the indices version.
+#      saver_input_ids.store_sentence(' '.join(str(e) for e in list(inp.cpu().numpy())))
+#      saver_response_ids.store_sentence(' '.join(str(e) for e in list(response.cpu().numpy())))
+#      saver_target_ids.store_sentence(' '.join(str(e) for e in list(targ.cpu().numpy())))
+#
+#      # Write the string version.
+#      saver_input_str.store_sentence(word2id.id2string(inp))
+#      saver_response_str.store_sentence(word2id.id2string(response))
+#      saver_target_str.store_sentence(word2id.id2string(targ))
+#
+#    print_progress("Evaluating: ", P, epoch, batch_num, len(data), total_saliency_loss/(batch_num+1), total_decoder_loss/(batch_num+1), start_time)
+#  print()
+#  saver_input_ids.write_to_file()
+#  saver_response_ids.write_to_file()
+#  saver_target_ids.write_to_file()
+#  saver_input_str.write_to_file()
+#  saver_response_str.write_to_file()
+#  saver_target_str.write_to_file()
 
 
 # %%
@@ -118,7 +118,7 @@ print("Bilinear: {}, Merge type: {}, epochs: {}, batch size: {}, hidden dim: {},
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device', device)
 glove_vocab, glove_embeddings = get_glove_embeddings(P.EMBEDDING_DIM)
-train_data, val_data, _, word2id = get_datasets("data/experiment_data/bidaf/{}_short/".format(P.MERGE_TYPE), P.BATCH_SIZE, P.MIN_OCCURENCE, glove_vocab, False)
+train_data, _, _, word2id = get_datasets("data/experiment_data/bidaf/{}_short/".format(P.MERGE_TYPE), P.BATCH_SIZE, P.MIN_OCCURENCE, glove_vocab, False, True)
 vocab_size = len(word2id.id2w)
 embeddings_matrix = get_embeddings_matrix(glove_embeddings, word2id, vocab_size, P.EMBEDDING_DIM)
 
@@ -161,22 +161,12 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
       epoch_total_decoder_loss += decoder_loss.item()
     opt.step()
 
-
-#    for inp, templ in zip(input, templates):
-#      response, _ = model.respond(device, word2id, [inp], [templ], max_length=20)
-#      print('\nInput: \t\t {}'.format(word2id.id2string(inp)))
-#      print('Response: \t {}'.format(word2id.id2string(response)))
-
     # Progress
     print_progress("Training: ", P, epoch, batch_num, len(train_data), epoch_total_sailency_loss/(batch_num+1), epoch_total_decoder_loss/(batch_num+1), start_time)
 
-#    if batch_num != 0 and batch_num % 100 == 0:
-#  postfix = "e{}_i{}".format(epoch,batch_num)
-
-
   save_checkpoint(P, epoch, model, opt, epoch_total_sailency_loss/(batch_num+1), epoch_total_decoder_loss/(batch_num+1))
-  postfix = "e{}".format(epoch)
-  evaluate(postfix, val_data, model, word2id, decoder_loss_fn, saliency_loss_fn, device)
+#  postfix = "e{}".format(epoch)
+#  evaluate(postfix, val_data, model, word2id, decoder_loss_fn, saliency_loss_fn, device)
 
   
 
