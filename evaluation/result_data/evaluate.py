@@ -8,7 +8,7 @@ def sort_filenames_on_epoch(folder: str, starts_with:str):
 
   filenames = [os.path.join(folder, f) for f in os.listdir(folder) if f.startswith(starts_with) and f.endswith('.txt')]
 
-  sorted_filenames = [None] * len(filenames)
+  sorted_filenames = [None] * 10#len(filenames)
   for filename in filenames:
     epoch = int(re.findall(r"e{1}\d+\.", filename)[0][1:-1]) # Only get the epoch out of the string.
     sorted_filenames[epoch] = filename
@@ -28,14 +28,17 @@ def optain_all_data():
   epochs_data = []
   for folder in folders:
     print('folder:{}'.format(folder))
-    sorted_fname_inputs = sort_filenames_on_epoch(folder, 'input_str')
+    input_fname = os.path.join(folder, 'target_str.txt')
     sorted_fname_responses = sort_filenames_on_epoch(folder, 'response_str')
 
     epoch_data = []
-    for i in range(min(len(sorted_fname_inputs), len(sorted_fname_responses))):
-      input_fname = sorted_fname_inputs[i]
+    for i in range(len(sorted_fname_responses)):
       response_fname = sorted_fname_responses[i]
 
+      if response_fname==None:
+        epoch_data.append((-1,-1,-1))
+        continue
+        
       ref_tex = []
       dec_tex = []
       for k in open(input_fname).readlines():

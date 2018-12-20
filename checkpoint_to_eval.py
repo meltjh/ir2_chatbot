@@ -93,10 +93,17 @@ def evaluate_checkpoint(P, postfix, data, word2id, checkpoint_fname, epoch, devi
   _ = load_checkpoint(P, model, opt, device, checkpoint_fname)
   
   
-  
-  saver_input_str = sentences_saver("{}input_str_{}.txt".format(P.EVAL_DIR, postfix))
-  saver_response_str = sentences_saver("{}response_str_{}.txt".format(P.EVAL_DIR, postfix))
-  saver_target_str = sentences_saver("{}target_str_{}.txt".format(P.EVAL_DIR, postfix))
+  # Only the first time this should be saved since it is the same for each epoch in this dir.
+  input_filename = "{}input_str.txt".format(P.EVAL_DIR)
+  saver_input_str = None
+  if not os.path.isfile(input_filename):
+    saver_input_str = sentences_saver(input_filename)
+    
+  input_filename = "{}target_str.txt".format(P.EVAL_DIR)
+  saver_input_str = None
+  if not os.path.isfile(input_filename):
+    saver_input_str = sentences_saver(input_filename)
+    
 
   print()
   total_decoder_loss = 0
@@ -122,15 +129,23 @@ def evaluate_checkpoint(P, postfix, data, word2id, checkpoint_fname, epoch, devi
       response, _ = model.respond(device, word2id, [inp], [templ], max_length=50)
 
       # Write the results to txt files
-      saver_input_str.store_sentence(word2id.id2string(inp))
+      if saver_input_str != None:
+        saver_input_str.store_sentence(word2id.id2string(inp))
+      if saver_target_str != None:
+        saver_target_str.store_sentence(word2id.id2string(targ))
       saver_response_str.store_sentence(word2id.id2string(response))
-      saver_target_str.store_sentence(word2id.id2string(targ))
+      
 
     print_progress("Evaluating: ", P, epoch-1, batch_num, len(data), total_saliency_loss/(batch_num+1), total_decoder_loss/(batch_num+1), start_time)
+  
   print()
-  saver_input_str.write_to_file()
+  
+  if saver_input_str != None:
+    saver_input_str.write_to_file()
+  if saver_target_str != None:
+    saver_target_str.write_to_file()
   saver_response_str.write_to_file()
-  saver_target_str.write_to_file()
+  
   
 checkpoints = checkpoints = [os.path.join(P.CHECKPOINT_DIR, f) for f in os.listdir(P.CHECKPOINT_DIR) if f.endswith('.pt')]
 for checkpoint_fname in checkpoints:
