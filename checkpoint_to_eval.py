@@ -104,6 +104,11 @@ def evaluate_checkpoint(P, postfix, data, word2id, checkpoint_fname, epoch, devi
   if not os.path.isfile(input_filename):
     saver_input_str = sentences_saver(input_filename)
     
+    
+  saver_response_str = sentences_saver("{}response_str_{}.txt".format(P.EVAL_DIR, postfix))
+  if os.path.isfile(input_filename):
+    print("Skipping {}, it does already exist.".format(input_filename))
+    return
 
   print()
   total_decoder_loss = 0
