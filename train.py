@@ -2,18 +2,16 @@ import argparse
 import torch
 import torch.nn as nn
 from time import time
-from utils import print_progress, save_checkpoint, load_checkpoint, unpack_batch, sentences_saver, make_dir
+from utils import print_progress, save_checkpoint, load_checkpoint, unpack_batch, sentences_saver, make_dir, save_word2id, load_word2id, does_word2id_exist
 from models import Model
-from read_data import get_datasets
+from read_data import get_single_dataset
 from embeddings import get_glove_embeddings, get_embeddings_matrix
+from word2id import Word2Id
 
-print("v3")
+print("v4")
 
 
 parser = argparse.ArgumentParser()
-
-parser.add_argument('--exp_id_prefix', type=str, default="default",
-                    help='the previx of this experiment')
 
 parser.add_argument('--n_epochs', type=int, default=50,
                     help='number of epochs')
@@ -36,6 +34,36 @@ parser.add_argument('--min_occ', type=int, default=500,
 parser.add_argument('--use_bilin', type=str, default='True',
                     help='is the bilinear part used')
 
+parser.add_argument('--exp_id_prefix', type=str, default="",
+                    help='the previx of this experiment')
+
+
+#
+#parser.add_argument('--n_epochs', type=int, default=2,
+#                    help='number of epochs')
+#
+#parser.add_argument('--batch_size', type=int, default=64,
+#                    help='batch size')
+#
+#parser.add_argument('--hidden_dim', type=int, default=4,
+#                    help='dimensionality of the hidden space')
+#
+#parser.add_argument('--emb_dim', type=int, default=50,
+#                    help='dimensionality of the word embeddings')
+#
+#parser.add_argument('--merge_type', type=str, default='oracle',
+#                    help='dataset')
+#
+#parser.add_argument('--min_occ', type=int, default=500,
+#                    help='minimal amount of occurences for a word to be used')
+#
+#parser.add_argument('--use_bilin', type=str, default='False',
+#                    help='is the bilinear part used')
+#
+#parser.add_argument('--exp_id_prefix', type=str, default="",
+#                    help='the previx of this experiment')
+
+
 args, _ = parser.parse_known_args()
 
 
@@ -48,11 +76,13 @@ class P:
   MERGE_TYPE = args.merge_type
   MIN_OCCURENCE = args.min_occ
   USE_BILINEAR = (args.use_bilin == 'True') or (args.use_bilin == 'y')
-  EXP_ID_PREFIX = args.exp_id_prefix
-  SAVE_DIR = 'checkpoints/{}_{}_{}/'.format(EXP_ID_PREFIX, MIN_OCCURENCE, USE_BILINEAR)
+  EXP_ID_PREFIX = (args.exp_id_prefix if args.exp_id_prefix != "" else "batch{}_hid{}_emb{}_mer{}_min{}_bilin{}".format(args.batch_size, args.hidden_dim, args.emb_dim, args.merge_type, args.min_occ, args.use_bilin)) 
+  CHECKPOINT_DIR = 'checkpoints/{}/'.format(EXP_ID_PREFIX)
+  WORD2ID_DIR = 'word2id/'
 #  FOLDER = "evaluation/result_data/{}_{}_{}/".format(EXP_ID_PREFIX, MIN_OCCURENCE, USE_BILINEAR)
 
-make_dir(P.SAVE_DIR)
+make_dir(P.CHECKPOINT_DIR)
+make_dir(P.WORD2ID_DIR)
 #make_dir(P.FOLDER)
 
 #def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, device):
@@ -117,10 +147,23 @@ print("Bilinear: {}, Merge type: {}, epochs: {}, batch size: {}, hidden dim: {},
 # Init
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device', device)
+
 glove_vocab, glove_embeddings = get_glove_embeddings(P.EMBEDDING_DIM)
-train_data, _, _, word2id = get_datasets("data/experiment_data/bidaf/{}_short/".format(P.MERGE_TYPE), P.BATCH_SIZE, P.MIN_OCCURENCE, glove_vocab, False, True)
+
+if does_word2id_exist(P) == False:
+  
+  word2id = Word2Id()
+  train_data = get_single_dataset("data/experiment_data/bidaf/{}_short/{}-v1.1.json".format(P.MERGE_TYPE, "train"), word2id, P.BATCH_SIZE, True, P.MIN_OCCURENCE, True, glove_vocab, False)
+  save_word2id(P, word2id)
+  
+else:
+  word2id = load_word2id(P)
+  train_data = get_single_dataset("data/experiment_data/bidaf/{}_short/{}-v1.1.json".format(P.MERGE_TYPE, "train"), word2id, P.BATCH_SIZE, False, P.MIN_OCCURENCE, True, glove_vocab, False)
+  
 vocab_size = len(word2id.id2w)
 embeddings_matrix = get_embeddings_matrix(glove_embeddings, word2id, vocab_size, P.EMBEDDING_DIM)
+
+
 
 # %% Model
 model = Model(word2id, P.HIDDEN_DIM, P.EMBEDDING_DIM, embeddings_matrix, P.USE_BILINEAR).to(device)
@@ -131,7 +174,7 @@ parameters = filter(lambda p: p.requires_grad, model.parameters())
 opt = torch.optim.Adam(parameters)
 
 # Check for checkpoints
-start_epoch = load_checkpoint(P, model, opt)
+start_epoch = load_checkpoint(P, model, opt, device)
 
 # Training loop
 for epoch in range(start_epoch, P.NUM_EPOCHS):

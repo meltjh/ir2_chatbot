@@ -6,6 +6,8 @@ import torch.nn as nn
 from torch import Tensor
 from torch.optim import Optimizer
 from time import time
+from word2id import Word2Id
+import pickle
 
 def print_progress(prefix: str, P, epoch: int, batch_num: int, num_batches: int, saliency_loss: float, decoder_loss: float, start_time: float) -> None:
   elapsed_time = time() - start_time
@@ -46,28 +48,29 @@ def save_checkpoint(P, epoch: int, model: nn.Module, optimiser: Optimizer, saile
     'decoder_loss': decoder_loss
   }
 
-  file = '{}/cp-{}.txt'.format(P.SAVE_DIR, epoch+1)
-  torch.save(state, file)
+  filename = '{}/cp-{}.pt'.format(P.CHECKPOINT_DIR, epoch+1)
+  torch.save(state, filename)
 
-def load_checkpoint(P, model: nn.Module, optimiser: Optimizer, specific_file = None) -> int:
+def load_checkpoint(P, model: nn.Module, optimiser: Optimizer,  device: torch.device, specific_file = None) -> int:
   epoch = 0
-  if os.path.exists(P.SAVE_DIR):
-    latest_checkpoint == ""
+  if os.path.exists(P.CHECKPOINT_DIR):
+    latest_checkpoint = ""
     if specific_file != None:
       latest_checkpoint = specific_file
     else:
-      checkpoints = [os.path.join(P.SAVE_DIR, f) for f in os.listdir(P.SAVE_DIR) if f.endswith('.txt')]
+      checkpoints = [os.path.join(P.CHECKPOINT_DIR, f) for f in os.listdir(P.CHECKPOINT_DIR) if f.endswith('.pt')]
   
       if checkpoints:
         latest_checkpoint = max(checkpoints, key=os.path.getctime)
       else:
-        return None
+        return epoch
    
-    state = torch.load(latest_checkpoint)
+    state = torch.load(latest_checkpoint, map_location=device)
 
     model.load_state_dict(state['model'])
     optimiser.load_state_dict(state['optimiser'])
     epoch = state['epoch']
+    
     model.train()
 
   return epoch
@@ -124,3 +127,23 @@ class sentences_saver:
 def make_dir(path):
   if not os.path.exists(path):
     os.mkdir(path)
+    
+def save_word2id(P, word2id: Word2Id):
+  filename = '{}/word2id-{}.pi'.format(P.WORD2ID_DIR, P.MIN_OCCURENCE)
+  print("Storing word2id as {}\n".format(filename))  
+  
+  word2id.w2id = dict(word2id.w2id) # transform in normal dict to store.
+  
+  filehandler = open(filename, 'wb')
+  pickle.dump(word2id, filehandler)
+  
+def load_word2id(P):
+  filename = '{}/word2id-{}.pi'.format(P.WORD2ID_DIR, P.MIN_OCCURENCE)
+  print("Loading word2id from {}\n".format(filename))  
+  filehandler = open(filename, 'rb')
+  word2id = pickle.load(filehandler)
+  return word2id
+
+def does_word2id_exist(P):
+  filename = '{}/word2id-{}.pi'.format(P.WORD2ID_DIR, P.MIN_OCCURENCE)
+  return os.path.isfile(filename)

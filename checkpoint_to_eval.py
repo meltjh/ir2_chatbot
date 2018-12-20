@@ -1,18 +1,17 @@
+import os
+import re
 import argparse
 import torch
 import torch.nn as nn
 from time import time
-from utils import print_progress, save_checkpoint, load_checkpoint, unpack_batch, sentences_saver, make_dir
+from utils import print_progress, save_checkpoint, load_checkpoint, unpack_batch, sentences_saver, make_dir, save_word2id, load_word2id, does_word2id_exist
 from models import Model
-from read_data import get_datasets
+from read_data import get_single_dataset
 from embeddings import get_glove_embeddings, get_embeddings_matrix
 
 
 
 parser = argparse.ArgumentParser()
-
-parser.add_argument('--exp_id_prefix', type=str, default="default",
-                    help='the previx of this experiment')
 
 #parser.add_argument('--n_epochs', type=int, default=50,
 #                    help='number of epochs')
@@ -26,8 +25,8 @@ parser.add_argument('--hidden_dim', type=int, default=128,
 parser.add_argument('--emb_dim', type=int, default=100,
                     help='dimensionality of the word embeddings')
 
-#parser.add_argument('--merge_type', type=str, default='oracle',
-#                    help='dataset')
+parser.add_argument('--merge_type', type=str, default='oracle',
+                    help='dataset')
 
 parser.add_argument('--min_occ', type=int, default=500,
                     help='minimal amount of occurences for a word to be used')
@@ -35,53 +34,69 @@ parser.add_argument('--min_occ', type=int, default=500,
 parser.add_argument('--use_bilin', type=str, default='True',
                     help='is the bilinear part used')
 
+parser.add_argument('--exp_id_prefix', type=str, default="",
+                    help='the previx of this experiment')
+
 args, _ = parser.parse_known_args()
 
 
 # Params
 class P:
-#  NUM_EPOCHS = args.n_epochs
+  NUM_EPOCHS = 1
   BATCH_SIZE = args.batch_size
   HIDDEN_DIM = args.hidden_dim
   EMBEDDING_DIM = args.emb_dim
-#  MERGE_TYPE = args.merge_type
+  MERGE_TYPE = args.merge_type
   MIN_OCCURENCE = args.min_occ
   USE_BILINEAR = (args.use_bilin == 'True') or (args.use_bilin == 'y')
-  EXP_ID_PREFIX = args.exp_id_prefix
-  CHECKPOINT_DIR = 'checkpoints/{}_{}_{}/'.format(EXP_ID_PREFIX, MIN_OCCURENCE, USE_BILINEAR)
-  EVAL_DIR = "evaluation/result_data/{}_{}_{}/".format(EXP_ID_PREFIX, MIN_OCCURENCE, USE_BILINEAR)
+  EXP_ID_PREFIX = (args.exp_id_prefix if args.exp_id_prefix != "" else "batch{}_hid{}_emb{}_mer{}_min{}_bilin{}".format(args.batch_size, args.hidden_dim, args.emb_dim, args.merge_type, args.min_occ, args.use_bilin)) 
+  CHECKPOINT_DIR = 'checkpoints/{}/'.format(EXP_ID_PREFIX)
+  EVAL_DIR = "evaluation/result_data/{}/".format(EXP_ID_PREFIX)
+  WORD2ID_DIR = 'word2id/'
 #  TARGET_DIR = "evaluation/targets/{}/".format(MIN_OCCURENCE)
   
 
-#make_dir(P.SAVE_DIR)
 make_dir(P.EVAL_DIR)
 
 
+
+
+
+# Init
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device', device)
 
 glove_vocab, glove_embeddings = get_glove_embeddings(P.EMBEDDING_DIM)
-_, dev_data, _, word2id = get_datasets("data/experiment_data/bidaf/{}_short/".format(P.MERGE_TYPE), P.BATCH_SIZE, P.MIN_OCCURENCE, glove_vocab, False, True)
+
+word2id = load_word2id(P)
+data = get_single_dataset("data/experiment_data/bidaf/{}_short/{}-v1.1.json".format(P.MERGE_TYPE, "dev"), word2id, P.BATCH_SIZE, False, P.MIN_OCCURENCE, False, glove_vocab, False)
+  
 vocab_size = len(word2id.id2w)
 embeddings_matrix = get_embeddings_matrix(glove_embeddings, word2id, vocab_size, P.EMBEDDING_DIM)
 
-  # %% Model
-  model = Model(word2id, P.HIDDEN_DIM, P.EMBEDDING_DIM, embeddings_matrix, P.USE_BILINEAR).to(device)
+
+
+# %% Model
+model = Model(word2id, P.HIDDEN_DIM, P.EMBEDDING_DIM, embeddings_matrix, P.USE_BILINEAR).to(device)
+
+saliency_loss_fn = nn.MSELoss()
+decoder_loss_fn = nn.NLLLoss()
+parameters = filter(lambda p: p.requires_grad, model.parameters())
+opt = torch.optim.Adam(parameters)
+
   
-  saliency_loss_fn = nn.MSELoss()
-  decoder_loss_fn = nn.NLLLoss()
-  parameters = filter(lambda p: p.requires_grad, model.parameters())
-  opt = torch.optim.Adam(parameters)
-  
-  # Load the checkpoint
-  load_checkpoint(P, model, opt, checkpoint_fname)
-  
-def evaluate_checkpoint(postfix, data, word2id, checkpoint_fname, device):
+def evaluate_checkpoint(P, postfix, data, word2id, checkpoint_fname, epoch, device):
   """
   
   """
+  # Check for checkpoints
+  _ = load_checkpoint(P, model, opt, device, checkpoint_fname)
   
-  saver_response_str = sentences_saver("{}response_str_{}.txt".format(P.FOLDER, postfix))
+  
+  
+  saver_input_str = sentences_saver("{}input_str_{}.txt".format(P.EVAL_DIR, postfix))
+  saver_response_str = sentences_saver("{}response_str_{}.txt".format(P.EVAL_DIR, postfix))
+  saver_target_str = sentences_saver("{}target_str_{}.txt".format(P.EVAL_DIR, postfix))
 
   print()
   total_decoder_loss = 0
@@ -104,14 +119,20 @@ def evaluate_checkpoint(postfix, data, word2id, checkpoint_fname, device):
     total_decoder_loss += decoder_loss.item()
 
     for inp, templ, targ in zip(input, templates, target):
-      response, _ = model.respond(device, word2id, [inp], [templ], max_length=20)
+      response, _ = model.respond(device, word2id, [inp], [templ], max_length=50)
 
       # Write the results to txt files
+      saver_input_str.store_sentence(word2id.id2string(inp))
       saver_response_str.store_sentence(word2id.id2string(response))
+      saver_target_str.store_sentence(word2id.id2string(targ))
 
-    print_progress("Evaluating: ", P, epoch, batch_num, len(data), total_saliency_loss/(batch_num+1), total_decoder_loss/(batch_num+1), start_time)
+    print_progress("Evaluating: ", P, epoch-1, batch_num, len(data), total_saliency_loss/(batch_num+1), total_decoder_loss/(batch_num+1), start_time)
   print()
+  saver_input_str.write_to_file()
   saver_response_str.write_to_file()
+  saver_target_str.write_to_file()
   
-  
-evaluate_checkpoint(postfix, dev_data, word2id, checkpoint_fname, device)
+checkpoints = checkpoints = [os.path.join(P.CHECKPOINT_DIR, f) for f in os.listdir(P.CHECKPOINT_DIR) if f.endswith('.pt')]
+for checkpoint_fname in checkpoints:
+  epoch = int(re.findall(r"cp-{1}\d+\.", checkpoint_fname)[0][3:-1]) # Only get the epoch out of the string.
+  evaluate_checkpoint(P, 'e{}'.format(epoch), data, word2id, checkpoint_fname, epoch, device)

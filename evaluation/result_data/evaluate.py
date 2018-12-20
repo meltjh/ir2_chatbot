@@ -10,7 +10,7 @@ def sort_filenames_on_epoch(folder: str, starts_with:str):
 
   sorted_filenames = [None] * len(filenames)
   for filename in filenames:
-    epoch = int(re.findall(r"e{1}\d+\.", filename)[0][1:-1]) # only get the epoch out of the string.
+    epoch = int(re.findall(r"e{1}\d+\.", filename)[0][1:-1]) # Only get the epoch out of the string.
     sorted_filenames[epoch] = filename
   
   return sorted_filenames
