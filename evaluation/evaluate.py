@@ -20,16 +20,16 @@ def optain_all_data():
   """
   
   """
-  
+  main_folder = './result_data/'
   # Obtain all folders
-  folders = [f for f in os.listdir('.') if f != '__pycache__' and os.path.isdir(f)]
-  
+  folders = [f for f in os.listdir(main_folder) if f != '__pycache__' and os.path.isdir(os.path.join(main_folder,f))]
+
   # Process each checkpoint in the folders
   epochs_data = []
   for folder in folders:
     print('folder:{}'.format(folder))
-    input_fname = os.path.join(folder, 'target_str.txt')
-    sorted_fname_responses = sort_filenames_on_epoch(folder, 'response_str')
+    input_fname = os.path.join('../data/tokenized_target.txt')
+    sorted_fname_responses = sort_filenames_on_epoch(os.path.join(main_folder,folder), 'response_str')
 
     epoch_data = []
     for i in range(len(sorted_fname_responses)):

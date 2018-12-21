@@ -5,8 +5,9 @@ __pycache__
 
 # Data #
 ########
-data/
+data/experiment_data/
 glove.6B/
-code/
-literature/
+*/__pycache__
 checkpoints/
+!checkpoints/plot_losses.py
+evaluation/result_data
