@@ -5,11 +5,10 @@ __pycache__
 
 # Data #
 ########
-data/experiment_data/
-glove.6B/
+data/experiment_data/*
+glove.6B/*
 */__pycache__
-checkpoints/
+checkpoints/*
 !checkpoints/plot_losses.py
-evaluation/result_data
-drive_test_1.ipynb
-drive_test_2.ipynb
+evaluation/result_data/*
+colab_notebooks/*
