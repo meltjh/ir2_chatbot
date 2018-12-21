@@ -8,10 +8,10 @@ def sort_filenames_on_epoch(folder: str, starts_with:str):
 
   filenames = [os.path.join(folder, f) for f in os.listdir(folder) if f.startswith(starts_with) and f.endswith('.txt')]
 
-  sorted_filenames = [None] * 10#len(filenames)
+  sorted_filenames = [None] * 25#len(filenames)
   for filename in filenames:
     epoch = int(re.findall(r"e{1}\d+\.", filename)[0][1:-1]) # Only get the epoch out of the string.
-    sorted_filenames[epoch] = filename
+    sorted_filenames[epoch-1] = filename
   
   return sorted_filenames
   

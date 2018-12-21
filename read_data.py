@@ -67,10 +67,6 @@ def read(filename, word2id, add_new_words, min_occurence, glove_vocab = None):
 
         # get the most common words that occur in the GLoVE set and convert them to ids
         counter = Counter(all_words)
-#        plot_word_counts(counter)
-        
-        # TODO Om de frequencies ff te plotten
-#        most_common = counter.most_common()
 
         word2id.frequent_words2id(counter, glove_vocab, min_occurence)
         print("Getting the training set\n")
@@ -92,30 +88,8 @@ def read(filename, word2id, add_new_words, min_occurence, glove_vocab = None):
         print("It took {:.2f} seconds\n".format(end-start))
 
     return all_data2id
-#
-#def plot_word_counts(counter):
-#    freqs = Counter([val for _, val in counter.items()])
-#    sorted_freqs = OrderedDict(sorted(freqs.items()))
-#    
-#    max_freq = list(sorted_freqs.keys())[-1]
-#    
-#    x = np.arange(max_freq)
-#    
-#    vals = [val2 for _, val2 in sorted_freqs.items()]
-#    idx = np.arange(len(sorted_freqs))
-#    
-#    bar_width = 0.35
-#
-#    plt.bar(idx, vals)
-#    plt.
-#
-#    # add labels
-#    plt.xticks(idx + bar_width, sorted_freqs.keys())
-#    plt.show()
-#    exit
 
 def print_counts(template_data, user_data):
-    # TODO: nog goed maken.
     template_lengths = []
     for key, templates in template_data.items():
         for template in templates:
@@ -155,11 +129,6 @@ def get_single_dataset(filename, word2id, batch_size, is_train, min_occurence, s
     print("Processing file {}".format(filename))
     data = read(filename, word2id, is_train, min_occurence, glove_vocab)
 
-    # Print frequencies for data analysis.
-    # TODO: fix print_counts for new version
-#    if print_freqs:
-#        print_counts(template_data, user_data)
-
     dataset = ChatsDataset(data)
     dataloader = DataLoader(dataset, batch_size, collate_fn=dataset.collate, shuffle=shuffle)
     print("-- Finished processing file {}\n".format(filename))
@@ -183,7 +152,6 @@ def process_tokens(temp_tokens):
     tokens = []
     for token in temp_tokens:
         token = token.lower()
-        flag = False
         l = ("-", "\u2212", "\u2014", "\u2013", "/", "~", '"', "'", "\u201C", "\u2019", "\u201D", "\u2018", "\u00B0")
         tokens.extend(re.split("([{}])".format("".join(l)), token))
     return tokens

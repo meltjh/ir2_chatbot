@@ -16,8 +16,8 @@ def optain_all_data():
     print('folder: {}'.format(folder))
     checkpoints = [os.path.join(folder, f) for f in os.listdir(folder) if f.endswith('.pt')]
     
-    checkpoint_data = [None] * len(checkpoints)
-#    checkpoint_data = [(-1, -1, -1)] * 10 # Temporal solution for missing data
+
+    checkpoint_data = [(-1, -1, -1)] * 25 #len(checkpoints) # Temporal solution for missing data
     for checkpoint in checkpoints:
       state = torch.load(checkpoint, map_location='cpu')
       
