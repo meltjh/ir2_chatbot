@@ -11,4 +11,4 @@ glove.6B/*
 checkpoints/*
 !checkpoints/plot_losses.py
 evaluation/result_data/*
-#colab_notebooks/*
+colab_notebooks/*
