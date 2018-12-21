@@ -8,6 +8,6 @@ __pycache__
 data/experiment_data/
 glove.6B/
 */__pycache__
-#checkpoints/
+checkpoints/
 !checkpoints/plot_losses.py
-evaluation/result_data
+#evaluation/result_data
