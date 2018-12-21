@@ -11,3 +11,5 @@ glove.6B/
 checkpoints/
 !checkpoints/plot_losses.py
 evaluation/result_data
+drive_test_1.ipynb
+drive_test_2.ipynb
