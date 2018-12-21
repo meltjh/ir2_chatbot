@@ -10,4 +10,4 @@ glove.6B/
 */__pycache__
 checkpoints/
 !checkpoints/plot_losses.py
-#evaluation/result_data
+evaluation/result_data
