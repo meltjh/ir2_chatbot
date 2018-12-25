@@ -22,7 +22,7 @@ rL_f_scores = []
 
 for idx in range(f3+1):
   ref = []
-  decoded = []
+  dec = []
 
   idx = str(idx)
   print("\n\n\nResults for index", idx)
@@ -34,7 +34,7 @@ for idx in range(f3+1):
     for l in open(j).readlines():
       ref_tex = ref_tex + l.strip()
     ref.append(ref_tex)
-    decoded.append(dec_tex)
+    dec.append(dec_tex)
   
   ref = [ref]
    
@@ -43,7 +43,7 @@ for idx in range(f3+1):
   # if recall_only=True, you can get recall scores of ROUGE
   print("\nRouge scores...")
   rouge = Pythonrouge(summary_file_exist=False,
-                    summary=ref, reference=ref,
+                    summary=dec, reference=ref,
                     n_gram=2, ROUGE_SU4=False, ROUGE_L=False,
                     recall_only=False, stemming=False, stopwords=False,
                     word_level=True, length_limit=False, length=100,

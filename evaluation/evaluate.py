@@ -8,7 +8,7 @@ def sort_filenames_on_epoch(folder: str, starts_with:str):
 
   filenames = [os.path.join(folder, f) for f in os.listdir(folder) if f.startswith(starts_with) and f.endswith('.txt')]
 
-  sorted_filenames = [None] * 25#len(filenames)
+  sorted_filenames = [None] * len(filenames)
   for filename in filenames:
     epoch = int(re.findall(r"e{1}\d+\.", filename)[0][1:-1]) # Only get the epoch out of the string.
     sorted_filenames[epoch-1] = filename
@@ -42,14 +42,13 @@ def optain_all_data():
       ref_tex = []
       dec_tex = []
       for k in open(input_fname).readlines():
-        dec_tex.append(k.strip())
+        sentence = k.strip()
+        sentence = sentence.replace("<bos> ", "").replace(" <eos>", "")
+        dec_tex.append(sentence)
       for l in open(response_fname).readlines():
-        ref_tex.append(l.strip())
-    
-#      print(dec_tex[0])
-#      print(ref_tex[0])
-#      print()
-#      print()
+        sentence = l.strip()
+        sentence = sentence.replace("<bos> ", "").replace(" <eos>", "")
+        ref_tex.append(sentence)
       
       # Blue
       print("\nBleu score...")
@@ -96,7 +95,7 @@ def plot_all_data(epochs_data: list):
     plt.plot(x_indices, r1_f1_score, label="{}  rouge 1 f1".format(checkpoint_name), linestyle=':', color=color, alpha=0.5)
     plt.plot(x_indices, r2_f1_score, label="{}  rouge 2 f1".format(checkpoint_name), linestyle='-', color=color, alpha=0.5)
   
-  plt.legend()
+  plt.legend(fancybox=True, framealpha=0.5)
   plt.show()
   
 epochs_data = optain_all_data()

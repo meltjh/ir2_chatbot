@@ -39,13 +39,14 @@ def unpack_batch(batch: list, device: torch.device) -> tuple:
   return input, target, templates, saliencies
 
 
-def save_checkpoint(P, epoch: int, model: nn.Module, optimiser: Optimizer, sailency_loss: float, decoder_loss: float) -> None:
+def save_checkpoint(P, epoch: int, model: nn.Module, optimiser: Optimizer, saliency_loss: float, decoder_loss: float) -> None:
   state = {
     'epoch': epoch + 1,
     'model': model.state_dict(),
     'optimiser': optimiser.state_dict(),
-    'sailency_loss': sailency_loss,
-    'decoder_loss': decoder_loss
+    'saliency_loss': saliency_loss,
+    'decoder_loss': decoder_loss,
+    'alpha': P.ALPHA
   }
 
   filename = '{}/cp-{}.pt'.format(P.CHECKPOINT_DIR, epoch+1)

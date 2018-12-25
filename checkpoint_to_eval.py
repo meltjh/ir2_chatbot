@@ -37,6 +37,9 @@ parser.add_argument('--use_bilin', type=str, default='True',
 parser.add_argument('--exp_id_prefix', type=str, default="",
                     help='the previx of this experiment')
 
+parser.add_argument('--alpha', type=float, default=0.5,
+                    help='alpha*bilinear + (1-alpha)*decoder')
+
 args, _ = parser.parse_known_args()
 
 
@@ -49,7 +52,8 @@ class P:
   MERGE_TYPE = args.merge_type
   MIN_OCCURENCE = args.min_occ
   USE_BILINEAR = (args.use_bilin == 'True') or (args.use_bilin == 'y')
-  EXP_ID_PREFIX = (args.exp_id_prefix if args.exp_id_prefix != "" else "batch{}_hid{}_emb{}_mer{}_min{}_bilin{}".format(args.batch_size, args.hidden_dim, args.emb_dim, args.merge_type, args.min_occ, args.use_bilin)) 
+  ALPHA = (args.alpha if USE_BILINEAR == True else 0) # Ignore the alpha if no bilinear is used.
+  EXP_ID_PREFIX = (args.exp_id_prefix if args.exp_id_prefix != "" else "batch{}_hid{}_emb{}_mer{}_min{}_bilin{}_alpha{}".format(args.batch_size, args.hidden_dim, args.emb_dim, args.merge_type, args.min_occ, args.use_bilin, args.alpha)) 
   CHECKPOINT_DIR = 'checkpoints/{}/'.format(EXP_ID_PREFIX)
   EVAL_DIR = "evaluation/result_data/{}/".format(EXP_ID_PREFIX)
   WORD2ID_DIR = 'word2id/'

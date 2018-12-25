@@ -8,9 +8,6 @@ from read_data import get_single_dataset
 from embeddings import get_glove_embeddings, get_embeddings_matrix
 from word2id import Word2Id
 
-print("v4")
-
-
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--n_epochs', type=int, default=50,
@@ -37,31 +34,8 @@ parser.add_argument('--use_bilin', type=str, default='True',
 parser.add_argument('--exp_id_prefix', type=str, default="",
                     help='the previx of this experiment')
 
-
-#
-#parser.add_argument('--n_epochs', type=int, default=2,
-#                    help='number of epochs')
-#
-#parser.add_argument('--batch_size', type=int, default=64,
-#                    help='batch size')
-#
-#parser.add_argument('--hidden_dim', type=int, default=4,
-#                    help='dimensionality of the hidden space')
-#
-#parser.add_argument('--emb_dim', type=int, default=50,
-#                    help='dimensionality of the word embeddings')
-#
-#parser.add_argument('--merge_type', type=str, default='oracle',
-#                    help='dataset')
-#
-#parser.add_argument('--min_occ', type=int, default=500,
-#                    help='minimal amount of occurences for a word to be used')
-#
-#parser.add_argument('--use_bilin', type=str, default='False',
-#                    help='is the bilinear part used')
-#
-#parser.add_argument('--exp_id_prefix', type=str, default="",
-#                    help='the previx of this experiment')
+parser.add_argument('--alpha', type=float, default=0.5,
+                    help='alpha*bilinear + (1-alpha)*decoder')
 
 
 args, _ = parser.parse_known_args()
@@ -76,73 +50,17 @@ class P:
   MERGE_TYPE = args.merge_type
   MIN_OCCURENCE = args.min_occ
   USE_BILINEAR = (args.use_bilin == 'True') or (args.use_bilin == 'y')
-  EXP_ID_PREFIX = (args.exp_id_prefix if args.exp_id_prefix != "" else "batch{}_hid{}_emb{}_mer{}_min{}_bilin{}".format(args.batch_size, args.hidden_dim, args.emb_dim, args.merge_type, args.min_occ, args.use_bilin)) 
+  ALPHA = (args.alpha if USE_BILINEAR == True else 0) # Ignore the alpha if no bilinear is used.
+  EXP_ID_PREFIX = (args.exp_id_prefix if args.exp_id_prefix != "" else "batch{}_hid{}_emb{}_mer{}_min{}_bilin{}_alpha{}".format(args.batch_size, args.hidden_dim, args.emb_dim, args.merge_type, args.min_occ, args.use_bilin, args.alpha)) 
   CHECKPOINT_DIR = 'checkpoints/{}/'.format(EXP_ID_PREFIX)
   WORD2ID_DIR = 'word2id/'
-#  FOLDER = "evaluation/result_data/{}_{}_{}/".format(EXP_ID_PREFIX, MIN_OCCURENCE, USE_BILINEAR)
 
 make_dir(P.CHECKPOINT_DIR)
 make_dir(P.WORD2ID_DIR)
-#make_dir(P.FOLDER)
-
-#def evaluate(postfix, data, model, word2id, decoder_loss_fn, saliency_loss_fn, device):
-#  """
-#  Evaluates and saves the generated sentences to the txt files. The postfix can be used for denoting the progress of training so far.
-#  """
-#  
-#  saver_input_ids = sentences_saver("{}input_ids_{}.txt".format(P.FOLDER, postfix))
-#  saver_response_ids = sentences_saver("{}response_ids_{}.txt".format(P.FOLDER, postfix))
-#  saver_target_ids = sentences_saver("{}target_ids_{}.txt".format(P.FOLDER, postfix))
-#  saver_input_str = sentences_saver("{}input_str_{}.txt".format(P.FOLDER, postfix))
-#  saver_response_str = sentences_saver("{}response_str_{}.txt".format(P.FOLDER, postfix))
-#  saver_target_str = sentences_saver("{}target_str_{}.txt".format(P.FOLDER, postfix))
-#
-#  print()
-#  total_decoder_loss = 0
-#  total_saliency_loss = 0
-#
-#  start_time = time()
-#  for batch_num, batch in enumerate(data):
-#    # Get batch
-#    input, target, templates, target_saliencies = unpack_batch(batch, device)
-#
-#    saliency, response = model(input, target, templates)
-#
-#    decoder_target = [t[1:] for t in target]  # Cut <BOS> from target
-#    decoder_loss = torch.stack([decoder_loss_fn(res, tar) for res, tar in zip(response, decoder_target)]).mean()
-#
-#    if P.USE_BILINEAR:
-#      # Only when the bilinear is used, there is a sailency loss.
-#      saliency_loss = torch.stack([saliency_loss_fn(sal, true_sal) for sal, true_sal in zip(saliency, target_saliencies)]).mean()
-#      total_saliency_loss += saliency_loss.item()
-#    total_decoder_loss += decoder_loss.item()
-#
-#    for inp, templ, targ in zip(input, templates, target):
-#      response, _ = model.respond(device, word2id, [inp], [templ], max_length=20)
-#
-#      # Write the results to txt files
-#      # Write the indices version.
-#      saver_input_ids.store_sentence(' '.join(str(e) for e in list(inp.cpu().numpy())))
-#      saver_response_ids.store_sentence(' '.join(str(e) for e in list(response.cpu().numpy())))
-#      saver_target_ids.store_sentence(' '.join(str(e) for e in list(targ.cpu().numpy())))
-#
-#      # Write the string version.
-#      saver_input_str.store_sentence(word2id.id2string(inp))
-#      saver_response_str.store_sentence(word2id.id2string(response))
-#      saver_target_str.store_sentence(word2id.id2string(targ))
-#
-#    print_progress("Evaluating: ", P, epoch, batch_num, len(data), total_saliency_loss/(batch_num+1), total_decoder_loss/(batch_num+1), start_time)
-#  print()
-#  saver_input_ids.write_to_file()
-#  saver_response_ids.write_to_file()
-#  saver_target_ids.write_to_file()
-#  saver_input_str.write_to_file()
-#  saver_response_str.write_to_file()
-#  saver_target_str.write_to_file()
 
 
 # %%
-print("Bilinear: {}, Merge type: {}, epochs: {}, batch size: {}, hidden dim: {}, embedding dim: {}, min occurences: {}.".format(P.USE_BILINEAR, P.MERGE_TYPE, P.NUM_EPOCHS, P.BATCH_SIZE, P.HIDDEN_DIM, P.EMBEDDING_DIM, P.MIN_OCCURENCE))
+print("Bilinear: {}, Merge type: {}, epochs: {}, batch size: {}, hidden dim: {}, embedding dim: {}, min occurences: {}, alpha: {}.".format(P.USE_BILINEAR, P.MERGE_TYPE, P.NUM_EPOCHS, P.BATCH_SIZE, P.HIDDEN_DIM, P.EMBEDDING_DIM, P.MIN_OCCURENCE, P.ALPHA))
 
 # Init
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -179,8 +97,9 @@ start_epoch = load_checkpoint(P, model, opt, device)
 # Training loop
 for epoch in range(start_epoch, P.NUM_EPOCHS):
   start_time = time()
-  epoch_total_sailency_loss = 0
+  epoch_total_saliency_loss = 0
   epoch_total_decoder_loss = 0
+  epoch_total_loss = 0
   for batch_num, batch in enumerate(train_data):
     # Get batch
     input, target, templates, target_saliencies = unpack_batch(batch, device)
@@ -196,18 +115,21 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
 
     if P.USE_BILINEAR:
       saliency_loss = torch.stack([saliency_loss_fn(sal, true_sal) for sal, true_sal in zip(saliency, target_saliencies)]).mean()
-      epoch_total_sailency_loss += saliency_loss.item()
+      loss = (args.alpha*saliency_loss + (1-args.alpha)*decoder_loss)
+      loss.backward()
+      
+      epoch_total_saliency_loss += saliency_loss.item()
       epoch_total_decoder_loss += decoder_loss.item()
-      (saliency_loss + decoder_loss).backward()
+      epoch_total_loss += loss
     else:
       decoder_loss.backward()
       epoch_total_decoder_loss += decoder_loss.item()
     opt.step()
 
     # Progress
-    print_progress("Training: ", P, epoch, batch_num, len(train_data), epoch_total_sailency_loss/(batch_num+1), epoch_total_decoder_loss/(batch_num+1), start_time)
+    print_progress("Training: ", P, epoch, batch_num, len(train_data), epoch_total_saliency_loss/(batch_num+1), epoch_total_decoder_loss/(batch_num+1), start_time)
 
-  save_checkpoint(P, epoch, model, opt, epoch_total_sailency_loss/(batch_num+1), epoch_total_decoder_loss/(batch_num+1))
+  save_checkpoint(P, epoch, model, opt, epoch_total_saliency_loss/(batch_num+1), epoch_total_decoder_loss/(batch_num+1))
 #  postfix = "e{}".format(epoch)
 #  evaluate(postfix, val_data, model, word2id, decoder_loss_fn, saliency_loss_fn, device)
 
