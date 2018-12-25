@@ -95,6 +95,8 @@ def plot_all_data(epochs_data: list):
     plt.plot(x_indices, r1_f1_score, label="{}  rouge 1 f1".format(checkpoint_name), linestyle=':', color=color, alpha=0.5)
     plt.plot(x_indices, r2_f1_score, label="{}  rouge 2 f1".format(checkpoint_name), linestyle='-', color=color, alpha=0.5)
   
+  plt.xlabel("Epochs")
+  plt.ylabel("Scores")
   plt.legend(fancybox=True, framealpha=0.5)
   plt.show()
   

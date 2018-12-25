@@ -64,6 +64,8 @@ def plot_all_data(checkpoints_data: list):
       plt.plot(x_indices, decoder_loss, label="{}  decoder".format(checkpoint_name), linestyle=':', color=color, alpha=0.5)
     plt.plot(x_indices, total_loss, label="{}  total".format(checkpoint_name), linestyle='-', color=color, alpha=0.5)
   
+  plt.xlabel("Epochs")
+  plt.ylabel("Loss")
   plt.legend()
   plt.show()
   
