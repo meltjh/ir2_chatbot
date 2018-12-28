@@ -98,13 +98,13 @@ def plot_all_data(epochs_data: list):
     color = next(ax._get_lines.prop_cycler)['color']
     
     # compare_occ
-#    if checkpoint_name == "_batch64_hid256_emb100_meroracle_min9_bilinTrue_alpha0.5":
+#    if checkpoint_name == "batch64_hid256_emb100_meroracle_min9_bilinTrue_alpha0.5":
 #      checkpoint_name = "9+ occurrence"
 #    elif checkpoint_name == "batch64_hid256_emb100_meroracle_min500_bilinTrue_alpha0.5":
 #      checkpoint_name = "500+ occurrence"
       
     # compare_alpha_batch
-#    if checkpoint_name == "_batch64_hid256_emb100_meroracle_min9_bilinTrue_alpha0.5":
+#    if checkpoint_name == "batch64_hid256_emb100_meroracle_min9_bilinTrue_alpha0.5":
 #      checkpoint_name = "Batch 64, alpha 0.5"
 #    elif checkpoint_name == "batch64_hid256_emb100_meroracle_min9_bilinTrue_alpha0.7":
 #      checkpoint_name = "Batch 64, alpha 0.7"
@@ -116,13 +116,13 @@ def plot_all_data(epochs_data: list):
 #      checkpoint_name = "Batch 4, alpha 0.7"
 
     # compare_bilinear
-#    if checkpoint_name == "_batch64_hid256_emb100_meroracle_min9_bilinTrue_alpha0.5":
+#    if checkpoint_name == "batch64_hid256_emb100_meroracle_min9_bilinTrue_alpha0.5":
 #      checkpoint_name = "With bilinear"
 #    elif checkpoint_name == "batch64_hid256_emb100_meroracle_min9_bilinFalse_alpha0.5":
 #      checkpoint_name = "Without bilinear"
     
     # compare_oracle_mixed
-#    if checkpoint_name == "_batch64_hid256_emb100_meroracle_min9_bilinTrue_alpha0.5":
+#    if checkpoint_name == "batch64_hid256_emb100_meroracle_min9_bilinTrue_alpha0.5":
 #      checkpoint_name = "Oracle"
 #    elif checkpoint_name == "batch64_hid256_emb100_mermixed_min9_bilinTrue_alpha0.5":
 #      checkpoint_name = "Mixed"
