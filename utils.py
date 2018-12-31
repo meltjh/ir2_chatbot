@@ -133,7 +133,7 @@ def save_word2id(P, word2id: Word2Id):
   filename = '{}/word2id-{}.pi'.format(P.WORD2ID_DIR, P.MIN_OCCURENCE)
   print("Storing word2id as {}\n".format(filename))  
   
-  word2id.w2id = dict(word2id.w2id) # transform in normal dict to store.
+  word2id.w2id = dict(word2id.w2id) # transform in normal dict to store. using pickle.
   
   filehandler = open(filename, 'wb')
   pickle.dump(word2id, filehandler)

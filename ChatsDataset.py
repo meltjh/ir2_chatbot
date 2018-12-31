@@ -61,7 +61,6 @@ class ChatsDataset(Dataset):
             answer_list.append(item["answer"])
             resources_list.append(item["resources"])
             qa_ids.append(item["qa_id"])
-            true_saliencies.append(item["true_saliencies"])
-            
+            true_saliencies.append(item["true_saliencies"])        
 
         return question_list, answer_list, resources_list, qa_ids, true_saliencies

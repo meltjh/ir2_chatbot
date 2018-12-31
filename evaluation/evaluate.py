@@ -6,7 +6,6 @@ import rouge
 import bleu
 
 def sort_filenames_on_epoch(folder: str, starts_with:str):
-
   filenames = [os.path.join(folder, f) for f in os.listdir(folder) if f.startswith(starts_with) and f.endswith('.txt')]
 
   sorted_filenames = [None] * len(filenames)
@@ -18,9 +17,6 @@ def sort_filenames_on_epoch(folder: str, starts_with:str):
   
   
 def optain_all_data():
-  """
-  
-  """
   main_folder = './result_data/'
   # Obtain all folders
   folders = [f for f in os.listdir(main_folder) if f != '__pycache__' and os.path.isdir(os.path.join(main_folder,f))]
@@ -72,18 +68,12 @@ def optain_all_data():
 #      f1_score, precision, recall = rouge.rouge_l_sentence_level(dec_tex, ref_tex)
 #      print(f1_score*100)#, precision, recall)
       
-      
       epoch_data.append((bl, r1_f1_score*100, r2_f1_score*100))
     
-      
-      
     epochs_data.append((folder, epoch_data))
   return epochs_data
     
 def plot_all_data(epochs_data: list):
-  """
-  
-  """
   legend_elements = [Line2D([0], [0], linestyle = '-.', color='black', alpha=.5, lw=2, label='BLEU'),
                    Line2D([0], [0], linestyle = ':', color='black', alpha=.5, lw=2, label='ROUGE 1'),
                    Line2D([0], [0], linestyle = '-', color='black', alpha=.5, lw=2, label='ROUGE 2')]
@@ -97,6 +87,7 @@ def plot_all_data(epochs_data: list):
     
     color = next(ax._get_lines.prop_cycler)['color']
     
+    # Uncomment to name the labels in the legend
     # compare_occ
 #    if checkpoint_name == "batch64_hid256_emb100_meroracle_min9_bilinTrue_alpha0.5":
 #      checkpoint_name = "9+ occurrence"
@@ -134,6 +125,7 @@ def plot_all_data(epochs_data: list):
   plt.xlabel("Epochs")
   plt.ylabel("Scores")
   
+  # Uncomment to change the order of the labels in the legend
 #  handles, labels = plt.gca().get_legend_handles_labels()
 #  order = [4,2,1,0,3]
 #  plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order], fancybox=True, framealpha=0.4, loc='upper right')

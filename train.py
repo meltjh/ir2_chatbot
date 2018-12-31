@@ -37,7 +37,6 @@ parser.add_argument('--exp_id_prefix', type=str, default="",
 parser.add_argument('--alpha', type=float, default=0.5,
                     help='alpha*bilinear + (1-alpha)*decoder')
 
-
 args, _ = parser.parse_known_args()
 
 
@@ -82,7 +81,6 @@ vocab_size = len(word2id.id2w)
 embeddings_matrix = get_embeddings_matrix(glove_embeddings, word2id, vocab_size, P.EMBEDDING_DIM)
 
 
-
 # %% Model
 model = Model(word2id, P.HIDDEN_DIM, P.EMBEDDING_DIM, embeddings_matrix, P.USE_BILINEAR).to(device)
 
@@ -104,8 +102,6 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
     # Get batch
     input, target, templates, target_saliencies = unpack_batch(batch, device)
 
-
-#    print("input", len(input))
     # Training step
     opt.zero_grad()
     saliency, response = model(input, target, templates)
@@ -130,20 +126,4 @@ for epoch in range(start_epoch, P.NUM_EPOCHS):
     print_progress("Training: ", P, epoch, batch_num, len(train_data), epoch_total_saliency_loss/(batch_num+1), epoch_total_decoder_loss/(batch_num+1), start_time)
 
   save_checkpoint(P, epoch, model, opt, epoch_total_saliency_loss/(batch_num+1), epoch_total_decoder_loss/(batch_num+1))
-#  postfix = "e{}".format(epoch)
-#  evaluate(postfix, val_data, model, word2id, decoder_loss_fn, saliency_loss_fn, device)
-
-  
-
-# %%
-# import importlib, models, utils
-# importlib.reload(models)
-# importlib.reload(utils)
-# from models import Model
-# from utils import print_progress, save_checkpoint, load_checkpoint, unpack_batch
-
-
-# %%
-  
-
 

@@ -143,7 +143,6 @@ class Model(nn.Module):
       template_state, saliency = self.bilinear(bilinear_input, bilinear_templates, stack_mapping)
       return self.decoder.generate(word2id, template_state, max_length, device)
     else:
-      # TODO: Hier is bilinear_input nog niet goed.
       return self.decoder.generate(word2id, bilinear_input, max_length, device)
 
 
@@ -185,8 +184,6 @@ class Decoder(nn.Module):
 
     for i in range(max_length-2):
       prev_word = self.embeddings(sentence[-1]).unsqueeze(0)
-
-      # hidden_state.shape is op tweede dim te groot, moet 1 zijn.
 
       gru_output, hidden_state = self.gru(prev_word, hidden_state)
       linear_out = self.out(gru_output)

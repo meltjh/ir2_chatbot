@@ -4,9 +4,6 @@ import time
 
 class Word2Id:
   def __init__(self):
-    """
-    
-    """
     self.TAG_UNK = "<UNK>"
     self.TAG_BOS = "<BOS>"
     self.TAG_EOS = "<EOS>"

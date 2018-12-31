@@ -3,11 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-def optain_all_data():
-  """
-  
-  """
-  
+def optain_all_data():  
   # Obtain all folders
   folders = [f for f in os.listdir('.') if f != '__pycache__' and os.path.isdir(f)]
   
@@ -46,9 +42,6 @@ def optain_all_data():
   return checkpoints_data
     
 def plot_all_data(checkpoints_data: list):
-  """
-  
-  """
   legend_elements = [Line2D([0], [0], linestyle = '-.', color='black', alpha=.5, lw=2, label='Bilinear'),
                    Line2D([0], [0], linestyle = ':', color='black', alpha=.5, lw=2, label='Decoder'),
                    Line2D([0], [0], linestyle = '-', color='black', alpha=.5, lw=2, label='Total')]
@@ -62,6 +55,7 @@ def plot_all_data(checkpoints_data: list):
     
     color = next(ax._get_lines.prop_cycler)['color']
     
+    # Uncomment to name the labels in the legend
     # compare_occ
 #    if checkpoint_name == "batch64_hid256_emb100_meroracle_min9_bilinTrue_alpha0.5":
 #      checkpoint_name = "9+ occurrence"
@@ -103,6 +97,7 @@ def plot_all_data(checkpoints_data: list):
   plt.xlabel("Epochs")
   plt.ylabel("Loss")
   
+  # Uncomment to change the order of the labels in the legend
 #  handles, labels = plt.gca().get_legend_handles_labels()
 #  order = [4,2,1,0,3]
 #  plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order], fancybox=True, framealpha=0.4, loc='upper right')

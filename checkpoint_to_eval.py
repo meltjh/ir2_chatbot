@@ -13,9 +13,6 @@ from embeddings import get_glove_embeddings, get_embeddings_matrix
 
 parser = argparse.ArgumentParser()
 
-#parser.add_argument('--n_epochs', type=int, default=50,
-#                    help='number of epochs')
-
 parser.add_argument('--batch_size', type=int, default=64,
                     help='batch size')
 
@@ -57,14 +54,8 @@ class P:
   CHECKPOINT_DIR = 'checkpoints/{}/'.format(EXP_ID_PREFIX)
   EVAL_DIR = "evaluation/result_data/{}/".format(EXP_ID_PREFIX)
   WORD2ID_DIR = 'word2id/'
-#  TARGET_DIR = "evaluation/targets/{}/".format(MIN_OCCURENCE)
-  
 
 make_dir(P.EVAL_DIR)
-
-
-
-
 
 # Init
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -77,7 +68,6 @@ data = get_single_dataset("data/experiment_data/bidaf/{}_short/{}-v1.1.json".for
   
 vocab_size = len(word2id.id2w)
 embeddings_matrix = get_embeddings_matrix(glove_embeddings, word2id, vocab_size, P.EMBEDDING_DIM)
-
 
 
 # %% Model
@@ -102,7 +92,6 @@ def evaluate_checkpoint(P, postfix, data, word2id, checkpoint_fname, epoch, devi
     return
   saver_response_str = sentences_saver(response_filename)
   
-
   print()
   total_decoder_loss = 0
   total_saliency_loss = 0
@@ -132,7 +121,6 @@ def evaluate_checkpoint(P, postfix, data, word2id, checkpoint_fname, epoch, devi
     print_progress("Evaluating: ", P, epoch-1, batch_num, len(data), total_saliency_loss/(batch_num+1), total_decoder_loss/(batch_num+1), start_time)
     
   print()
-
   saver_response_str.write_to_file()
   
   
