@@ -6,4 +6,4 @@ This repository contains the code which is used to create the results as mention
 (4) evaluation/evaluate.py uses those predictions to compare with data/ tokenized_target.txt and calculate the BLEU and ROUGE scores and plot them.
 
 ## Data used in the paper
-The checkpoints are not in this repository due to the large size of the files. The responses generated that are used in the paper are stored in this repository.
+The checkpoints are not in this repository due to the large size of the files. The responses generated that are used in the paper are stored in this repository. The data for this project can be obtained from https://github.com/nikitacs16/Holl-E by clicking on Download. The data that is used is from experiment_data/bidaf. Copy the folders so that the structure is as following: ir2_chatbot/data/experiment_data/bidaf/mixed_short and ir2_chatbot/data/experiment_data/bidaf/oracle_short.
