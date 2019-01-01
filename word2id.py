@@ -113,7 +113,7 @@ class Word2Id:
   
   def id2string(self, data):
     """
-    Input: data as a list of id's.
+    Input: data as a list of ids.
     Output: a single string.
     """
     string = ""
